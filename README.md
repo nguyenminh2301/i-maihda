@@ -125,6 +125,34 @@ Where:
 
 **Interpretation:** As SES-patterned under-detection strength increases, observed prevalence declines monotonically (dashed line). VPC exhibits a **non-monotonic** response: it initially decreases (masking) and may subsequently increase at extreme detection levels — because some strata lose nearly all observed cases while others retain detectable events. This non-monotonicity underscores why detection bias cannot be ignored in cross-cohort VPC comparisons.
 
+### 3. Side-by-side: imaihda vs CRAN MAIHDA
+
+![Side-by-side VPC](figures/side_by_side_vpc.png)
+
+**Interpretation:** At n = 10,000 with identical seed, all three estimators (`imaihda-fast`, `imaihda-glmer`, `CRAN-MAIHDA`) return VPC estimates within <1 percentage point of each other. The fast method-of-moments matches the gold-standard GLMM estimates with negligible bias after the v0.2.1 correction.
+
+![Side-by-side variance](figures/side_by_side_variance.png)
+
+**Interpretation:** Between-stratum variance components are also in close agreement. The glmer and CRAN MAIHDA estimates are identical (both use `lme4::glmer()` under the hood). The fast method's variance is within ~3% of the GLMM estimate.
+
+### 4. Function visualizations
+
+**`plot_vpc()`** — Single-call VPC bar chart:
+
+![plot_vpc example](figures/plot_vpc_example.png)
+
+**`plot_strata()`** — Caterpillar plot of stratum random effects with 95% CIs:
+
+![plot_strata example](figures/plot_strata_example.png)
+
+**`plot_sweep()`** — Detection-bias sweep (unique to imaihda):
+
+![plot_sweep example](figures/plot_sweep_example.png)
+
+**`stepwise_pcv()`** — Stepwise PCV decomposition bar chart:
+
+![stepwise_pcv example](figures/stepwise_pcv_example.png)
+
 ---
 
 ## R Package `imaihda`

@@ -125,6 +125,34 @@ Trong đó:
 
 **Diễn giải:** Khi cường độ sai số phát hiện theo khuôn mẫu SES tăng, tỉ lệ hiện mắc quan sát giảm đơn điệu (đường đứt nét). VPC thể hiện phản ứng **không đơn điệu**: ban đầu giảm (che lấp) và sau đó có thể tăng trở lại ở mức sai số cực cao — vì một số strata mất gần như toàn bộ ca quan sát trong khi các strata khác vẫn giữ được ca phát hiện. Tính không đơn điệu này nhấn mạnh lý do không thể bỏ qua sai số phát hiện trong so sánh VPC xuyên cohort.
 
+### 3. So sánh trực tiếp: imaihda vs CRAN MAIHDA
+
+![Side-by-side VPC](figures/side_by_side_vpc.png)
+
+**Diễn giải:** Ở n = 10.000 với cùng seed, cả ba bộ ước lượng (`imaihda-fast`, `imaihda-glmer`, `CRAN-MAIHDA`) cho giá trị VPC lệch nhau <1 điểm phần trăm. Phương pháp nhanh method-of-moments khớp với ước lượng GLMM chuẩn vàng sau khi sửa lỗi v0.2.1.
+
+![Side-by-side variance](figures/side_by_side_variance.png)
+
+**Diễn giải:** Thành phần phương sai giữa strata cũng đồng thuận chặt chẽ. Ước lượng glmer và CRAN MAIHDA giống hệt nhau (cùng dùng `lme4::glmer()`). Phương sai phương pháp nhanh lệch trong khoảng ~3% so với GLMM.
+
+### 4. Hình minh họa các hàm
+
+**`plot_vpc()`** — Biểu đồ cột VPC dùng một lệnh:
+
+![plot_vpc example](figures/plot_vpc_example.png)
+
+**`plot_strata()`** — Biểu đồ caterpillar hiệu ứng ngẫu nhiên từng strata với CI 95%:
+
+![plot_strata example](figures/plot_strata_example.png)
+
+**`plot_sweep()`** — Quét sai số phát hiện (độc quyền imaihda):
+
+![plot_sweep example](figures/plot_sweep_example.png)
+
+**`stepwise_pcv()`** — Biểu đồ cột phân rã PCV từng bước:
+
+![stepwise_pcv example](figures/stepwise_pcv_example.png)
+
 ---
 
 ## R package `imaihda`
