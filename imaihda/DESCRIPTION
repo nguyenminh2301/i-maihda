@@ -1,0 +1,30 @@
+Package: imaihda
+Type: Package
+Title: Intersectional MAIHDA Diagnostics for Health Inequality Research
+Version: 0.1.0
+Authors@R: c(
+    person("Minh Thien", "Nguyen",
+           email = "nguyenminh2301@users.noreply.github.com",
+           role = c("aut", "cre")),
+    person("Factory Droid", role = "ctb",
+           comment = "AI-assisted code generation and testing")
+  )
+Description: Fast synthetic-diagnostic tools for Intersectional Multilevel
+    Analysis of Individual Heterogeneity and Discriminatory Accuracy (I-MAIHDA).
+    Computes Variance Partition Coefficient (VPC) and Proportional Change in
+    Variance (PCV) from intersectional strata using empirical-logit
+    method-of-moments estimators. Includes a simulation engine for stress-testing
+    VPC/PCV sensitivity to outcome prevalence, sparse strata, and differential
+    detection.
+License: MIT + file LICENSE
+URL: https://github.com/nguyenminh2301/-i-maihda
+BugReports: https://github.com/nguyenminh2301/-i-maihda/issues
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+Imports:
+    stats
+Suggests:
+    ggplot2,
+    testthat (>= 3.0.0),
+    viridis
+Config/testthat/edition: 3
