@@ -6,3 +6,6 @@ export(pcv)
 export(scenario_grid)
 export(simulate_intersectional_data)
 export(vpc_latent)
+
+import(lme4)
+importFrom(stats, binomial, glm, predict, rbinom, rgamma, rnorm, weighted.mean)

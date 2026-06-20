@@ -16,10 +16,11 @@ Quy trình mô phỏng dữ liệu tổng hợp kiểm định độ nhạy củ
 4. [Kết quả benchmark](#kết-quả-benchmark)
 5. [Hình minh họa](#hình-minh-họa)
 6. [R package `imaihda`](#r-package-imaihda)
-7. [Đối chứng song ngữ](#đối-chứng-song-ngữ)
-8. [R package so với script độc lập](#r-package-so-với-script-độc-lập)
-9. [FAQs](#faqs)
-10. [Tài liệu tham khảo](#tài-liệu-tham-khảo)
+7. [So sánh với CRAN `MAIHDA`](#so-sánh-với-cran-maihda)
+8. [Đối chứng song ngữ](#đối-chứng-song-ngữ)
+9. [R package so với script độc lập](#r-package-so-với-script-độc-lập)
+10. [FAQs](#faqs)
+11. [Tài liệu tham khảo](#tài-liệu-tham-khảo)
 
 ---
 
@@ -249,6 +250,55 @@ devtools::test("imaihda")   # 39 testthat assertions
 > Cả hai bản triển khai đều đạt **kết luận định tính giống hệt nhau**. Khác biệt số liệu phát sinh từ khác biệt engine RNG và là điều được kỳ vọng trong bất kỳ tái lập song ngữ nào sử dụng mô phỏng ngẫu nhiên. Chúng không ảnh hưởng đến diễn giải khoa học.
 
 ---
+
+## So sánh với CRAN `MAIHDA`
+
+Package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) trên CRAN (Bulut 2026, v0.1.11) là **công cụ thực nghiệm chuẩn vàng** cho MAIHDA giao thoa. Package dùng ước lượng GLMM đầy đủ qua `lme4::glmer()`/`lmer()` hoặc `brms`, hỗ trợ trọng số khảo sát, bootstrap CI, và bảng điều khiển Shiny. Package `imaihda` này là **bộ công cụ mô phỏng và stress-test bổ trợ**.
+
+### So sánh tính năng
+
+| Khả năng | CRAN `MAIHDA` | `imaihda` |
+|----------|:------------:|:---------:|
+| VPC & PCV dựa trên GLMM | ✅ `lme4`/`brms` | ✅ `method="glmer"` |
+| Chẩn đoán xấp xỉ nhanh | — | ✅ `method="fast"` |
+| Mô phỏng dữ liệu tổng hợp | — | ✅ `simulate_intersectional_data()` |
+| Sai số phát hiện theo khuôn mẫu SES | — | ✅ cường độ tùy chỉnh |
+| Kịch bản stress-test dựng sẵn | — | ✅ 5 kịch bản (A–E) |
+| Đánh giá benchmark tự động | — | ✅ 6 tiêu chí pass/fail |
+| Song ngữ Python + R | — | ✅ hai bản triển khai |
+| Khoảng tin cậy bootstrap | ✅ tham số | — |
+| Trọng số khảo sát (design-weighted) | ✅ `WeMix` | — |
+| Bảng điều khiển Shiny | ✅ `run_maihda_app()` | — |
+| Phân rã PCV từng bước | ✅ `stepwise_pcv()` | — |
+| So sánh nhóm | ✅ `compare_maihda_groups()` | — |
+| Mô hình chéo/phân loại / dọc | ✅ | — |
+| Độ chính xác phân biệt (AUC, MOR) | ✅ | — |
+
+### Đối chứng chéo
+
+Chúng tôi đã kiểm định `imaihda(method="glmer")` với CRAN `MAIHDA` trên dữ liệu NHANES đi kèm (`maihda_health_data`). Cả hai package cho ra **thành phần phương sai và ước lượng VPC/PCV giống hệt nhau**:
+
+| Chỉ số | CRAN `MAIHDA` | `imaihda` (glmer) | Khớp |
+|--------|:------------:|:-----------------:|:----:|
+| Phương sai giữa strata (null) | 2,831 | 2,831 | ✅ 1e-6 |
+| Phương sai giữa strata (main) | 0,492 | 0,492 | ✅ 1e-6 |
+| VPC (null) | 0,0636 | 0,0636 | ✅ 1e-6 |
+| PCV | 0,826 | 0,826 | ✅ 1e-4 |
+
+> **Điểm mấu chốt:** CRAN `MAIHDA` báo cáo VPC từ mô hình REML (mặc định cho mô hình tuyến tính hỗn hợp) và PCV từ mô hình được refit bằng ML (qua `maihda_pcv_refit_ml()`). Với biến nhị phân (logistic GLMM), sự phân biệt này không liên quan vì `glmer()` luôn dùng ML. `method="glmer"` của chúng tôi dùng ML xuyên suốt cho biến nhị phân, khớp chính xác với ước lượng logistic của CRAN `MAIHDA`.
+
+49 assertions testthat (gồm 12 test đối chứng chéo) xác nhận sự tương đương về số học. Xem `tests/testthat/test-maihda-crossval.R`.
+
+### Khi nào dùng package nào
+
+| Trường hợp sử dụng | Package khuyến nghị |
+|--------------------|---------------------|
+| MAIHDA thực nghiệm với dữ liệu khảo sát thật | CRAN `MAIHDA` |
+| Stress-test phương pháp luận về độ nhạy VPC/PCV | `imaihda` |
+| Sinh dữ liệu tổng hợp có sai số phát hiện | `imaihda` |
+| Kiểm tra khả năng tái lập song ngữ (Python ↔ R) | `imaihda` |
+| MAIHDA chuẩn publication với bootstrap CI | CRAN `MAIHDA` |
+| Khám phá tương tác (Shiny) | CRAN `MAIHDA` |
 
 ## R package so với script độc lập
 

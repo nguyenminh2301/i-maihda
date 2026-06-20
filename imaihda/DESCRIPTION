@@ -22,9 +22,11 @@ BugReports: https://github.com/nguyenminh2301/-i-maihda/issues
 Encoding: UTF-8
 RoxygenNote: 7.3.2
 Imports:
+    lme4,
     stats
 Suggests:
     ggplot2,
+    MAIHDA,
     testthat (>= 3.0.0),
     viridis
 Config/testthat/edition: 3

@@ -16,10 +16,11 @@ A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** —
 4. [Benchmark Results](#benchmark-results)
 5. [Figures](#figures)
 6. [R Package `imaihda`](#r-package-imaihda)
-7. [Cross-Language Validation](#cross-language-validation)
-8. [R Package vs. Standalone Scripts](#r-package-vs-standalone-scripts)
-9. [FAQs](#faqs)
-10. [References](#references)
+7. [Comparison with CRAN `MAIHDA`](#comparison-with-cran-maihda)
+8. [Cross-Language Validation](#cross-language-validation)
+9. [R Package vs. Standalone Scripts](#r-package-vs-standalone-scripts)
+10. [FAQs](#faqs)
+11. [References](#references)
 
 ---
 
@@ -249,6 +250,55 @@ devtools::test("imaihda")   # 39 testthat assertions
 > Both implementations reach **identical qualitative conclusions**. Numerical differences arise from RNG engine divergence and are expected in any cross-language reproduction using stochastic simulation. They do not affect the scientific interpretation.
 
 ---
+
+## Comparison with CRAN `MAIHDA`
+
+The CRAN package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) (Bulut 2026, v0.1.11) is the **gold-standard empirical tool** for intersectional MAIHDA. It uses full GLMM estimation via `lme4::glmer()`/`lmer()` or `brms`, supports survey weights, bootstrap CIs, and a Shiny dashboard. This package, `imaihda`, is a **complementary simulation and stress-test toolkit**.
+
+### Feature comparison
+
+| Capability | CRAN `MAIHDA` | `imaihda` |
+|------------|:------------:|:---------:|
+| GLMM-based VPC & PCV | ✅ `lme4`/`brms` | ✅ `method="glmer"` |
+| Fast approximate diagnostic | — | ✅ `method="fast"` |
+| Synthetic data simulation | — | ✅ `simulate_intersectional_data()` |
+| SES-patterned detection bias | — | ✅ configurable strength |
+| Pre-built stress-test scenarios | — | ✅ 5 scenarios (A–E) |
+| Automated benchmark evaluation | — | ✅ 6 pass/fail checks |
+| Python + R cross-language | — | ✅ dual implementation |
+| Bootstrap confidence intervals | ✅ parametric | — |
+| Survey weights (design-weighted) | ✅ `WeMix` | — |
+| Shiny dashboard | ✅ `run_maihda_app()` | — |
+| Stepwise PCV decomposition | ✅ `stepwise_pcv()` | — |
+| Group comparison | ✅ `compare_maihda_groups()` | — |
+| Cross-classified / longitudinal | ✅ | — |
+| Discriminatory accuracy (AUC, MOR) | ✅ | — |
+
+### Cross-validation
+
+We validated `imaihda(method="glmer")` against CRAN `MAIHDA` on the bundled NHANES data (`maihda_health_data`). Both packages produce **identical variance components and VPC/PCV estimates**:
+
+| Metric | CRAN `MAIHDA` | `imaihda` (glmer) | Match |
+|--------|:------------:|:-----------------:|:-----:|
+| Between-stratum variance (null) | 2.831 | 2.831 | ✅ 1e-6 |
+| Between-stratum variance (main) | 0.492 | 0.492 | ✅ 1e-6 |
+| VPC (null) | 0.0636 | 0.0636 | ✅ 1e-6 |
+| PCV | 0.826 | 0.826 | ✅ 1e-4 |
+
+> **Key insight:** CRAN `MAIHDA` reports VPC from REML-fitted models (the default for linear mixed models) and PCV from ML-refitted models (via `maihda_pcv_refit_ml()`). For binary outcomes (logistic GLMMs), this distinction is irrelevant because `glmer()` always uses ML. Our `method="glmer"` uses ML throughout for binary outcomes, matching CRAN `MAIHDA`'s logistic estimates exactly.
+
+49 testthat assertions (including 12 cross-validation tests) confirm numeric equivalence. See `tests/testthat/test-maihda-crossval.R`.
+
+### When to use which
+
+| Use case | Recommended package |
+|----------|-------------------|
+| Empirical MAIHDA with real survey data | CRAN `MAIHDA` |
+| Methodological stress-testing of VPC/PCV sensitivity | `imaihda` |
+| Synthetic data generation with detection bias | `imaihda` |
+| Cross-language (Python ↔ R) reproducibility checks | `imaihda` |
+| Publication-ready MAIHDA with bootstrap CIs | CRAN `MAIHDA` |
+| Interactive exploration (Shiny) | CRAN `MAIHDA` |
 
 ## R Package vs. Standalone Scripts
 
