@@ -252,7 +252,7 @@ The `benchmark_final.R` and `benchmark2.R` scripts in the repository root reprod
 
 ```r
 devtools::load_all("imaihda")
-source("benchmark_final.R")   # produces benchmark_results/benchmark_*.png and .csv
+source("benchmark_final.R")   # produces imaihda/inst/benchmark/benchmark_*.png and .csv
 ```
 
 ---
@@ -292,7 +292,7 @@ The CRAN package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) (Bulut 20
 
 ### Computational Benchmark
 
-Benchmarked on synthetic data (`interaction_sd = 0.90`, 36 intersectional strata, 2×3×3×2). Machine: Windows 10, R 4.3.3, Intel Core i7-13700H, 16 GB RAM. Results averaged over 2–3 runs per configuration. Full raw data: `benchmark_results/benchmark_all.csv`.
+Benchmarked on synthetic data (`interaction_sd = 0.90`, 36 intersectional strata, 2×3×3×2). Machine: Windows 10, R 4.3.3, Intel Core i7-13700H, 16 GB RAM. Results averaged over 2–3 runs per configuration. Full raw data: `imaihda/inst/benchmark/benchmark_all.csv`.
 
 #### Computation Time (seconds)
 
@@ -307,8 +307,8 @@ Benchmarked on synthetic data (`interaction_sd = 0.90`, 36 intersectional strata
 
 The fast method-of-moments is 92–144× faster than full GLMM at moderate sample sizes. It scales near-linearly with n (R² > 0.99). At n = 2 million, VPC and PCV are computed in 22 seconds. Full GLMM becomes impractical beyond ~100K on standard laptop hardware.
 
-![Computation time scaling](benchmark_results/benchmark_time.png)
-![Fast method linear scaling](benchmark_results/benchmark_fast_linear.png)
+![Computation time scaling](imaihda/inst/benchmark/benchmark_time.png)
+![Fast method linear scaling](imaihda/inst/benchmark/benchmark_fast_linear.png)
 
 #### VPC Accuracy (Null Model)
 
@@ -327,7 +327,7 @@ v0.2.1 uses unweighted (sample) variance instead of the precision-weighted formu
 
 Across 3 seeds, the average absolute difference between fast and glmer is under 1 pp. The v0.2.0 precision-weighted estimator had a systematic ~9 pp downward bias because precision weights (1/sampling variance) downweight extreme strata that carry most between-stratum signal. The unweighted estimator corrects this.
 
-![VPC comparison](benchmark_results/benchmark_vpc.png)
+![VPC comparison](imaihda/inst/benchmark/benchmark_vpc.png)
 
 #### Between-Stratum Variance
 
@@ -521,3 +521,4 @@ MIT — see [LICENSE](LICENSE).
 ---
 
 *Maintained by Minh Thien Nguyen. Last updated: June 2026 (v0.2.1).*
+

@@ -23,6 +23,9 @@ Thumbs.db
 # --- Logs ---
 logs/
 
+# --- Generated benchmark outputs (canonical data in imaihda/inst/benchmark/) ---
+benchmark_results/
+
 # --- Temporary output (do not commit intermediate results) ---
 data/outputs/*.csv
 data/outputs/*.json
