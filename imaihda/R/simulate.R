@@ -99,63 +99,62 @@ simulate_intersectional_data <- function(
   }
 
   stratum_id <- sample(seq_len(k), size = n, replace = TRUE, prob = weights)
-  x <- strata[stratum_id, , drop = FALSE]
-  rownames(x) <- NULL
+
+  # Build output efficiently — only social dimension columns + stratum + y
+  out <- data.frame(
+    sex       = strata$sex[stratum_id],
+    education = strata$education[stratum_id],
+    wealth    = strata$wealth[stratum_id],
+    rural     = strata$rural[stratum_id],
+    stratum   = as.integer(stratum_id),
+    stringsAsFactors = FALSE
+  )
 
   # Additive linear predictor
-  linear_predictor <- prevalence_shift +
-    0.20 * x$sex +
-    0.35 * x$education +
-    0.30 * x$wealth +
-    0.25 * x$rural
+  eta <- prevalence_shift +
+    0.20 * out$sex +
+    0.35 * out$education +
+    0.30 * out$wealth +
+    0.25 * out$rural
 
   # Residual intersectional heterogeneity
-  true_stratum_residual <- rep(0, k)
   if (interaction_sd > 0) {
     set.seed(seed + 999L)
     raw <- stats::rnorm(k, mean = 0, sd = interaction_sd)
 
-    # Structured interaction: triple-disadvantage gets +0.90
     idx_high <- which(
       strata$education == 2 & strata$wealth == 2 & strata$rural == 1
     )
     raw[idx_high] <- raw[idx_high] + 0.90
 
-    # Structured interaction: education-advantaged, wealth-disadvantaged urban gets -0.60
     idx_low <- which(
       strata$education == 0 & strata$wealth == 2 & strata$rural == 0
     )
     raw[idx_low] <- raw[idx_low] - 0.60
 
-    # Center residuals (orthogonal to intercept)
-    true_stratum_residual <- raw - mean(raw)
-    linear_predictor <- linear_predictor + true_stratum_residual[stratum_id]
+    stratum_residual <- raw - mean(raw)
+    out$true_stratum_residual <- stratum_residual[stratum_id]
+    eta <- eta + out$true_stratum_residual
   }
 
   # True outcomes
-  p_true <- logit_inv(linear_predictor)
-  y_true <- stats::rbinom(n, size = 1L, prob = p_true)
+  y_true <- stats::rbinom(n, size = 1L, prob = logit_inv(eta))
 
   # Differential detection
   if (detection_strength > 0) {
     detect_logit <- 2.0 -
-      detection_strength * x$education -
-      detection_strength * x$wealth -
-      0.40 * detection_strength * x$rural
+      detection_strength * out$education -
+      detection_strength * out$wealth -
+      0.40 * detection_strength * out$rural
     detect_p <- logit_inv(detect_logit)
     detected <- stats::rbinom(n, size = 1L, prob = detect_p)
-    y_observed <- y_true * detected
+    out$y <- as.integer(y_true * detected)
+    out$y_true <- as.integer(y_true)
+    out$detection_probability <- detect_p
   } else {
-    detect_p <- rep(1, n)
-    y_observed <- y_true
+    out$y <- as.integer(y_true)
+    out$y_true <- out$y  # same as observed when no detection bias
   }
 
-  # Assemble output
-  out <- x
-  out$stratum               <- factor(stratum_id, levels = seq_len(k))
-  out$y                     <- as.integer(y_observed)
-  out$y_true                <- as.integer(y_true)
-  out$detection_probability <- detect_p
-  out$true_stratum_residual <- true_stratum_residual[stratum_id]
   out
 }

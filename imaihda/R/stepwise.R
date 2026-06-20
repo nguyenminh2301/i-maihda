@@ -52,8 +52,18 @@ stepwise_pcv <- function(data, outcome, vars, stratum = "stratum",
   # Step 0: null model (stratum only)
   if (!quiet) cat("Step 0: Null model (", stratum, " only)\n", sep = "")
 
-  # Pre-aggregate strata with actual covariate values for prediction
-  strata_agg <- aggregate_strata(data)
+  # Pre-aggregate strata with actual covariate values for prediction.
+  # Build a data.frame with the fixed column names that aggregate_strata expects.
+  agg_df <- data.frame(
+    stratum   = data[[stratum]],
+    sex       = if ("sex"       %in% names(data)) data[["sex"]]       else 0L,
+    education = if ("education" %in% names(data)) data[["education"]] else 0L,
+    wealth    = if ("wealth"    %in% names(data)) data[["wealth"]]    else 0L,
+    rural     = if ("rural"     %in% names(data)) data[["rural"]]     else 0L,
+    y         = data[[outcome]],
+    stringsAsFactors = FALSE
+  )
+  strata_agg <- aggregate_strata(agg_df)
 
   if (method == "fast") {
     p_overall <- mean(data[[outcome]])

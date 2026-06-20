@@ -62,10 +62,15 @@ test_that("simulation produces expected structure", {
   expect_equal(length(unique(df$stratum)), 36)
   expect_true(all(df$y %in% c(0, 1)))
   expect_true(mean(df$y) > 0 && mean(df$y) < 1)
-  expected_cols <- c("sex", "education", "wealth", "rural", "stratum",
-                     "y", "y_true", "detection_probability",
-                     "true_stratum_residual")
+  expected_cols <- c("sex", "education", "wealth", "rural", "stratum", "y")
   expect_true(all(expected_cols %in% names(df)))
+  
+  # With detection and interaction: expect extra columns
+  df2 <- simulate_intersectional_data(n = 500, detection_strength = 0.8,
+                                       interaction_sd = 0.9, seed = 42)
+  expect_true("y_true" %in% names(df2))
+  expect_true("detection_probability" %in% names(df2))
+  expect_true("true_stratum_residual" %in% names(df2))
 })
 
 test_that("sparse simulation creates uneven stratum sizes", {
