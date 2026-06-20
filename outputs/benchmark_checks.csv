@@ -1,7 +1,0 @@
-check,passed,value,criterion
-A_additive_is_additive_dominant,True,PCV=100.0; VPC_main=0.00,PCV >= 80 and VPC_main < 1
-B_interaction_increases_vpc,True,A=4.32; B=22.58,B VPC_null > A VPC_null + 5 percentage points
-B_interaction_leaves_residual_variance,True,PCV=35.8,PCV < 70
-C_detection_reduces_observed_prevalence,True,A=23.3%; C=11.3%,C observed prevalence < A observed prevalence
-D_detection_can_mask_interaction_vpc,True,B=22.58; D=13.68,D VPC_null < B VPC_null despite same residual-interaction SD
-E_sparse_strata_are_flagged,True,B min_n=144; E min_n=1,E minimum stratum size < B minimum stratum size

@@ -1,16 +1,33 @@
+# --- Python ---
 __pycache__/
 .pytest_cache/
 *.pyc
+*.pyo
 .env
-.DS_Store
+.venv/
+venv/
 
-# R temporary files
+# --- R ---
 .Rhistory
 .RData
 .Ruserdata
 *.Rproj
 .Rproj.user/
+# Generated documentation (rebuild with roxygen2)
+imaihda/man/
 
-# Run checkpoints (generated per-run)
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+logs/
+
+# --- Temporary output (do not commit intermediate results) ---
+data/outputs/*.csv
+data/outputs/*.json
+data/checkpoints/
+
+# --- Run artifacts ---
 R_checkpoint_*.txt
-checkpoints/checkpoint_03_final_run.txt
+checkpoint_*.txt

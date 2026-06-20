@@ -19,7 +19,7 @@ has_maihda <- requireNamespace("MAIHDA", quietly = TRUE)
 
 OUT <- "figures"
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
-BENCH_OUT <- "inst/benchmark"
+BENCH_OUT <- "imaihda/inst/benchmark"
 dir.create(BENCH_OUT, showWarnings = FALSE, recursive = TRUE)
 BENCH_OUT2 <- "benchmark_results"
 dir.create(BENCH_OUT2, showWarnings = FALSE, recursive = TRUE)
@@ -344,9 +344,9 @@ ggsave(file.path(OUT, "stepwise_pcv_example.png"), p10, width = 9, height = 5.5,
 cat("\n===== Figures generated =====\n")
 cat("figures/scenario_vpc_pcv.png\n")
 cat("figures/detection_sweep.png\n")
-cat("inst/benchmark/benchmark_time.png\n")
-cat("inst/benchmark/benchmark_fast_linear.png\n")
-cat("inst/benchmark/benchmark_vpc.png  <-- CORRECTED v0.2.1\n")
+cat("imaihda/inst/benchmark/benchmark_time.png\n")
+cat("imaihda/inst/benchmark/benchmark_fast_linear.png\n")
+cat("imaihda/inst/benchmark/benchmark_vpc.png  <-- CORRECTED v0.2.1\n")
 cat("figures/side_by_side_vpc.png\n")
 cat("figures/side_by_side_variance.png\n")
 cat("figures/plot_vpc_example.png\n")
