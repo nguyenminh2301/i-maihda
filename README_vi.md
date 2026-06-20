@@ -342,11 +342,13 @@ source("benchmark_final.R")   # sinh ra inst/benchmark/benchmark_*.png và .csv
 
 ## So sánh với CRAN `MAIHDA`
 
-Package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) trên CRAN (Bulut 2026, v0.1.11) là **công cụ thực nghiệm chuẩn vàng** cho MAIHDA giao thoa. `imaihda` v0.2.1 là **bộ công cụ chẩn đoán và stress-test bổ trợ**, tái tạo toàn bộ chức năng của CRAN MAIHDA và bổ sung phương pháp nhanh xấp xỉ (hiện lệch <1 điểm phần trăm so với GLMM chuẩn vàng), mô phỏng, và công cụ đối chiếu chéo.
+Package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) trên CRAN (Bulut 2026, v0.1.11, 25 hàm xuất) là công cụ thực nghiệm đã được thiết lập cho MAIHDA giao thoa. Package hỗ trợ ba engine mô hình hoá (`lme4`, `brms` cho suy luận Bayes, `WeMix` cho trọng số khảo sát), ba kiểu phân rã (two-model chuẩn, crossed-dimensions, longitudinal/growth-curve), khoảng tin cậy bootstrap, bảng điều khiển Shiny tương tác, và năm bộ dữ liệu đi kèm.
 
-### Benchmark tính toán (Dữ liệu thật — Không ảo giác)
+`imaihda` v0.2.1 (14 hàm xuất) tiếp cận theo hướng khác: đây là bộ công cụ mô phỏng và stress-test. Package bổ sung bộ ước lượng method-of-moments nhanh (xấp xỉ kết quả GLMM trong thời gian ngắn hơn nhiều), sinh dữ liệu tổng hợp với sai số phát hiện tùy chỉnh, các kịch bản benchmark dựng sẵn, và đối chứng song ngữ với bản Python. Package không cố gắng sánh ngang phạm vi lựa chọn mô hình hoá của CRAN MAIHDA.
 
-Chúng tôi đã benchmark `imaihda-fast`, `imaihda-glmer`, và `CRAN-MAIHDA` trên dữ liệu tổng hợp (`interaction_sd = 0,90`, 36 strata giao thoa, 2×3×3×2). Máy: Windows 10, R 4.3.3, Intel Core i7-13700H, 16 GB RAM. Kết quả trung bình qua 2–3 lần chạy mỗi cấu hình. Dữ liệu thô: `inst/benchmark/benchmark_all.csv`.
+### Benchmark tính toán
+
+Benchmark trên dữ liệu tổng hợp (`interaction_sd = 0,90`, 36 strata giao thoa, 2×3×3×2). Máy: Windows 10, R 4.3.3, Intel Core i7-13700H, 16 GB RAM. Kết quả trung bình qua 2–3 lần chạy mỗi cấu hình. Dữ liệu thô: `inst/benchmark/benchmark_all.csv`.
 
 #### Thời gian tính toán (giây)
 
@@ -359,14 +361,14 @@ Chúng tôi đã benchmark `imaihda-fast`, `imaihda-glmer`, và `CRAN-MAIHDA` tr
 | 1.000.000 | **12,96** | — | — | — |
 | 2.000.000 | **22,39** | — | — | — |
 
-> **Phát hiện chính:** Phương pháp nhanh method-of-moments **nhanh hơn 92–144 lần** so với GLMM đầy đủ ở cỡ mẫu vừa. Tốc độ tăng gần như tuyến tính với n (R² > 0,99). Ở n = 2 triệu, VPC và PCV được tính trong **22 giây**. GLMM/MAIHDA trở nên không thực tế sau 100K trên phần cứng tiêu chuẩn.
+Phương pháp nhanh method-of-moments nhanh hơn 92–144 lần so với GLMM đầy đủ ở cỡ mẫu vừa. Tốc độ tăng gần như tuyến tính với n (R² > 0,99). Ở n = 2 triệu, VPC và PCV được tính trong 22 giây. GLMM trở nên không thực tế sau ~100K trên phần cứng laptop tiêu chuẩn.
 
 ![Biểu đồ thời gian tính toán](inst/benchmark/benchmark_time.png)
 ![Biểu đồ tuyến tính phương pháp nhanh](inst/benchmark/benchmark_fast_linear.png)
 
 #### Độ chính xác VPC (Mô hình Null)
 
-Bộ ước lượng nhanh đã sửa (v0.2.1) dùng **phương sai không trọng số** thay vì trọng số precision, loại bỏ hoàn toàn sai số hệ thống ~9 điểm phần trăm của v0.2.0.
+v0.2.1 dùng phương sai không trọng số (mẫu) thay vì công thức trọng số precision của v0.2.0.
 
 **v0.2.1 (đã sửa):**
 
@@ -379,7 +381,7 @@ Bộ ước lượng nhanh đã sửa (v0.2.1) dùng **phương sai không trọ
 | 1.000.000 | 23,16% | — | — | — |
 | 2.000.000 | 23,30% | — | — | — |
 
-> **Phát hiện chính:** Bộ ước lượng nhanh đã sửa hiện khớp với glmer/MAIHDA trong phạm vi **trung bình 0,5 điểm phần trăm** (sai số chuẩn qua 3 seeds). Sai số hệ thống ~9 pp của v0.2.0 gây ra bởi trọng số precision làm giảm ảnh hưởng của các strata cực đoan — vốn mang nhiều tín hiệu between-stratum nhất. Chuyển sang phương sai mẫu không trọng số đã loại bỏ hoàn toàn sai số này. **`method="fast"` hiện phù hợp cho cả thăm dò VÀ ước lượng chuẩn publication** (dù glmer vẫn là chuẩn vàng cho báo cáo cuối cùng).
+Qua 3 seeds, sai khác tuyệt đối trung bình giữa fast và glmer dưới 1 điểm phần trăm. Bộ ước lượng có trọng số của v0.2.0 bị sai số hệ thống ~9 pp giảm xuống vì trọng số precision (1/sampling variance) làm giảm ảnh hưởng của các strata cực đoan — những strata mang nhiều tín hiệu between-stratum nhất. Bộ ước lượng không trọng số sửa được vấn đề này.
 
 ![So sánh VPC](inst/benchmark/benchmark_vpc.png)
 
@@ -419,43 +421,71 @@ Chúng tôi đã kiểm định `imaihda(method="glmer")` với CRAN `MAIHDA` tr
 
 > 51 assertions testthat (gồm 12 test đối chứng chéo) xác nhận sự tương đương về số học.
 
-### Hướng dẫn chọn phương pháp
+### Khi nào dùng package nào
 
-| Nhiệm vụ | Khuyến nghị | Lý do |
-|----------|:-----------:|-------|
-| Thăm dò / phân tích sơ bộ | `method="fast"` | 0,3 giây ở 10K |
-| Stress-test mô phỏng (100+ lần chạy) | `method="fast"` | Nhanh hơn 100× ở quy mô lớn |
-| Quét độ nhạy phương pháp luận | `method="fast"` | Khám phá không gian tham số nhanh |
-| Ước lượng chuẩn publication | `method="fast"` hoặc `method="glmer"` | Fast hiện lệch <1 pp so với glmer |
-| Báo cáo cuối / phản biện | `method="glmer"` | GLMM là chuẩn được chấp nhận |
-| Dữ liệu khảo sát thực có trọng số thiết kế | `CRAN-MAIHDA` | Hỗ trợ `WeMix` tích hợp |
-| Khoảng tin cậy bootstrap | `CRAN-MAIHDA` | CI tham số/bootstrap có sẵn |
-| Phân rã PCV từng bước | Cả hai package | imaihda thêm phương pháp nhanh |
-| Chẩn đoán sai số phát hiện | `imaihda` (độc quyền) | `plot_sweep()` chỉ có trong imaihda |
-| Đối chiếu chéo giữa các package | `imaihda` (độc quyền) | `compare_packages()` chỉ có trong imaihda |
+| Nhiệm vụ | Khuyến nghị | Ghi chú |
+|----------|:-----------:|---------|
+| Phân tích thăm dò / pilot | `imaihda-fast` | 0,3 giây ở 10K, kết quả lệch <1 pp so với GLMM |
+| Nghiên cứu mô phỏng (100+ lần lặp) | `imaihda-fast` | Nhanh hơn 100× so với GLMM |
+| Quét độ nhạy không gian tham số | `imaihda-fast` | `plot_sweep()` cho sai số phát hiện |
+| Phân tích thực nghiệm (dữ liệu khảo sát) | CRAN `MAIHDA` | Bootstrap CI, trọng số khảo sát, so sánh mô hình |
+| Ước lượng Bayes / prior | CRAN `MAIHDA` (`engine="brms"`) | Không có trong imaihda |
+| Dữ liệu khảo sát có trọng số thiết kế | CRAN `MAIHDA` (`engine="wemix"`) | Không có trong imaihda |
+| MAIHDA dọc / growth-curve | CRAN `MAIHDA` | Không có trong imaihda |
+| Phân rã crossed-dimensions | CRAN `MAIHDA` | Không có trong imaihda |
+| Khám phá tương tác (Shiny) | CRAN `MAIHDA` | Bảng điều khiển Shiny |
+| Dữ liệu tổng hợp có sai số phát hiện | `imaihda` | `simulate_intersectional_data()` |
+| Đối chiếu chéo giữa các package | `imaihda` | `compare_packages()` |
+| Kiểm tra song ngữ (Python–R) | `imaihda` | Hai bản triển khai |
 
 ### Ma trận tính năng đầy đủ
 
-| Khả năng | CRAN `MAIHDA` | `imaihda` v0.2.1 |
-|----------|:------------:|:-----------------:|
-| VPC & PCV dựa trên GLMM | ✅ `lme4`/`brms` | ✅ `method="glmer"` |
-| Chẩn đoán method-of-moments nhanh | — | ✅ `method="fast"` (lệch <1 pp, nhanh hơn 92–144×) |
-| Phân rã PCV từng bước | ✅ | ✅ (cả fast và glmer) |
-| Độ chính xác phân biệt (AUC, MOR) | ✅ | ✅ `discriminatory_accuracy()` |
-| VPC trên thang xác suất | ✅ | ✅ `response_vpc()` |
-| Tương tác strata (hiệu chỉnh đa kiểm định) | ✅ Chỉ BH | ✅ Bonferroni + BH |
-| Sinh dữ liệu tổng hợp | — | ✅ `simulate_intersectional_data()` |
-| Sai số phát hiện theo khuôn mẫu SES | — | ✅ tùy chỉnh cường độ |
-| Kịch bản stress-test dựng sẵn (A–E) | — | ✅ 5 kịch bản |
-| Đánh giá benchmark tự động | — | ✅ 6 tiêu chí pass/fail |
-| Đối chiếu song ngữ Python ↔ R | — | ✅ hai bản triển khai |
-| Biểu đồ chất lượng xuất bản | Cơ bản | ✅ `plot_vpc()`, `plot_strata()`, `plot_sweep()` |
-| Đối chiếu chéo tự động giữa các package | — | ✅ `compare_packages()` |
-| Khoảng tin cậy bootstrap | ✅ tham số | — |
-| Trọng số khảo sát (thiết kế) | ✅ `WeMix` | — |
-| Bảng điều khiển Shiny | ✅ `run_maihda_app()` | — |
-| So sánh nhóm | ✅ | — |
-| Mô hình chéo / dọc | ✅ | — |
+Toàn bộ 25 hàm xuất của CRAN MAIHDA và tương đương trong imaihda (nếu có):
+
+| Hàm CRAN MAIHDA | Tương đương trong `imaihda` | Ghi chú |
+|-----------------|:--------------------------:|---------|
+| `maihda()` (engine lme4) | `fit_imaihda(method="glmer")` | Cùng kết quả |
+| `maihda()` (engine brms) | — | Suy luận Bayes chưa có |
+| `maihda()` (engine wemix) | — | Trọng số khảo sát chưa có |
+| `maihda()` phân rã two-model | `fit_imaihda()` mặc định | Cùng logic |
+| `maihda()` crossed-dimensions | — | Chưa triển khai |
+| `maihda()` longitudinal | — | Chưa triển khai |
+| `maihda()` bootstrap CI | — | Chưa triển khai |
+| `maihda()` so sánh nhóm | — | Chưa triển khai |
+| `fit_maihda()` | `fit_imaihda()` | Fit một mô hình |
+| `make_strata()` | — | Dùng cột stratum dựng sẵn |
+| `stepwise_pcv()` | `stepwise_pcv()` | imaihda thêm `method="fast"` |
+| `calculate_pvc()` | `pcv()` | Hàm đại số đơn giản |
+| `maihda_interactions()` | `stratum_interactions()` | Cả BH và Bonferroni |
+| `maihda_discriminatory_accuracy()` | `discriminatory_accuracy()` | AUC + MOR |
+| `maihda_auc()` | Tích hợp trong `discriminatory_accuracy()` | |
+| `maihda_mor()` | Tích hợp trong `discriminatory_accuracy()` | |
+| `maihda_vpc_response()` | `response_vpc()` | Delta-method + mô phỏng |
+| `maihda_cumulative()` | — | Biến thứ bậc chưa hỗ trợ |
+| `maihda_ic()` | — | So sánh mô hình chưa có |
+| `maihda_table()` | — | Bảng tóm tắt strata |
+| `predict_maihda()` | — | Dự báo chưa triển khai |
+| `compare_maihda()` | `compare_packages()` | Mục đích khác |
+| `compare_maihda_groups()` | — | So sánh nhóm chưa có |
+| `compute_maihda_ternary_data()` | — | Biểu đồ ternary chưa có |
+| `maihda_ternary_plot()` | — | Biểu đồ ternary chưa có |
+| `plot_comparison()` | — | Biểu đồ so sánh mô hình |
+| `plot_group_comparison()` | — | Biểu đồ so sánh nhóm |
+| `plot_prediction_deviation_panels()` | — | Chẩn đoán mô hình |
+| `run_maihda_app()` | — | Shiny app chưa có |
+| `glance()` / `tidy()` | — | Tích hợp broom |
+
+**Hàm chỉ có trong imaihda (không có trong CRAN MAIHDA):**
+
+| Hàm | Mục đích |
+|------|----------|
+| `simulate_intersectional_data()` | Sinh dữ liệu tổng hợp, cấu hình sai số phát hiện |
+| `scenario_grid()` + `evaluate_benchmarks()` | 5 kịch bản stress-test dựng sẵn (A–E) |
+| `plot_vpc()` | Biểu đồ cột VPC, so sánh fast/glmer |
+| `plot_strata()` | Biểu đồ caterpillar với đánh dấu ý nghĩa |
+| `plot_sweep()` | Trực quan hóa quét sai số phát hiện |
+| `compare_packages()` | Đối chiếu tự động imaihda vs CRAN MAIHDA |
+| `fit_imaihda(method="fast")` | Bộ ước lượng method-of-moments (nhanh hơn ~100×, lệch <1 pp) |
 
 ---
 

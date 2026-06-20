@@ -2,7 +2,7 @@
 
 > **Tiếng Việt:** [README_vi.md](README_vi.md)
 
-A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.2.1** (full reproduction + CRAN MAIHDA compatibility, fast VPC within <1 pp of gold-standard GLMM).
+A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.2.1** (full reproduction, cross-validated against CRAN MAIHDA, fast estimator within <1 pp of GLMM).
 
 ⚠️ **No real data.** This repository uses only synthetic data. It makes no empirical claim about any population. It is a methodological demonstration.
 
@@ -34,7 +34,7 @@ If a middle-income-country (MIC) cohort exhibits **higher VPC** or **lower PCV**
 
 ## Method
 
-The workflow simulates individuals nested in **36 intersectional strata** defined by sex (2) × education (3) × wealth (3) × rural/less-resourced setting (2). It computes fast I-MAIHDA diagnostics using empirical-stratum logits and a main-effects logistic model, with an **unweighted method-of-moments** estimator that subtracts expected binomial sampling noise from the observed (sample) variance of stratum-level residuals. As of v0.2.1, this fast estimator matches the full GLMM (gold-standard) VPC to within 0.5 pp on average, while being 92–144× faster.
+The workflow simulates individuals nested in **36 intersectional strata** defined by sex (2) × education (3) × wealth (3) × rural/less-resourced setting (2). It computes fast I-MAIHDA diagnostics using empirical-stratum logits and a main-effects logistic model, with an **unweighted method-of-moments** estimator that subtracts expected binomial sampling noise from the observed (sample) variance of stratum-level residuals. As of v0.2.1, this fast estimator yields VPC values within 1 pp of the GLMM result, while being 92–144× faster than full mixed-model estimation.
 
 ### Formulas
 
@@ -107,7 +107,7 @@ Where:
 | 5 | D detection can mask interaction VPC: VPC_null(D) < VPC_null(B) | ✅ | ✅ |
 | 6 | E sparse strata are flagged: min_n(E) < min_n(B) | ✅ | ✅ |
 
-> **Takeaway:** Both Python and R confirm that VPC and PCV move with prevalence, sparse strata, and differential detection. Raw HIC‑MIC comparisons are not interpretable without accompanying stratum diagnostics. Note: the R scenario-level estimates above were computed with the v0.2.0 weighted estimator; v0.2.1's unweighted estimator produces VPC values closer to the gold-standard GLMM (see [Benchmark Results](#comparison-with-cran-maihda) below).
+> **Takeaway:** Both Python and R confirm that VPC and PCV move with prevalence, sparse strata, and differential detection. Raw HIC‑MIC comparisons are not interpretable without accompanying stratum diagnostics. Note: the R scenario-level estimates above were computed with the v0.2.0 weighted estimator; v0.2.1's unweighted estimator produces VPC values closer to the GLMM results (see benchmark tables below).
 
 ---
 
@@ -129,7 +129,7 @@ Where:
 
 ![Side-by-side VPC](figures/side_by_side_vpc.png)
 
-**Interpretation:** At n = 10,000 with identical seed, all three estimators (`imaihda-fast`, `imaihda-glmer`, `CRAN-MAIHDA`) return VPC estimates within <1 percentage point of each other. The fast method-of-moments matches the gold-standard GLMM estimates with negligible bias after the v0.2.1 correction.
+**Interpretation:** At n = 10,000 with identical seed, all three estimators (`imaihda-fast`, `imaihda-glmer`, `CRAN-MAIHDA`) return VPC estimates within <1 percentage point of each other. The fast method-of-moments estimates match the GLMM results closely after the v0.2.1 correction (unweighted variance).
 
 ![Side-by-side variance](figures/side_by_side_variance.png)
 
@@ -290,11 +290,13 @@ source("benchmark_final.R")   # produces inst/benchmark/benchmark_*.png and .csv
 
 ## Comparison with CRAN `MAIHDA`
 
-The CRAN package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) (Bulut 2026, v0.1.11) is the **gold-standard empirical tool** for intersectional MAIHDA. `imaihda` v0.2.1 is a **complementary diagnostic and stress-test toolkit** that replicates all CRAN MAIHDA functions and adds fast approximate methods (now within <1 pp of gold-standard GLMM), simulation, and cross-validation tools.
+The CRAN package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) (Bulut 2026, v0.1.11, 25 exported functions) is the established empirical tool for intersectional MAIHDA. It supports three modelling engines (`lme4`, `brms` for Bayesian, `WeMix` for survey weights), three decomposition types (standard two-model, crossed-dimensions, longitudinal/growth-curve), bootstrap confidence intervals, an interactive Shiny dashboard, and five bundled datasets.
 
-### Computational Benchmark (Real Data — No Hallucination)
+`imaihda` v0.2.1 (14 exported functions) takes a different approach: it is a simulation and stress-test toolkit. It adds a fast method-of-moments estimator that approximates the GLMM result in a fraction of the time, synthetic data generation with configurable detection bias, pre-built benchmark scenarios, and cross-language validation against a Python implementation. It does not attempt to match CRAN MAIHDA's breadth of modelling options.
 
-We benchmarked `imaihda-fast`, `imaihda-glmer`, and `CRAN-MAIHDA` on synthetic data (`interaction_sd = 0.90`, 36 intersectional strata, 2×3×3×2). Machine: Windows 10, R 4.3.3, Intel Core i7-13700H, 16 GB RAM. Results averaged over 2–3 runs per configuration. Full raw data: `inst/benchmark/benchmark_all.csv`.
+### Computational Benchmark
+
+Benchmarked on synthetic data (`interaction_sd = 0.90`, 36 intersectional strata, 2×3×3×2). Machine: Windows 10, R 4.3.3, Intel Core i7-13700H, 16 GB RAM. Results averaged over 2–3 runs per configuration. Full raw data: `inst/benchmark/benchmark_all.csv`.
 
 #### Computation Time (seconds)
 
@@ -307,14 +309,14 @@ We benchmarked `imaihda-fast`, `imaihda-glmer`, and `CRAN-MAIHDA` on synthetic d
 | 1,000,000 | **12.96** | — | — | — |
 | 2,000,000 | **22.39** | — | — | — |
 
-> **Key finding:** The fast method-of-moments is **92–144× faster** than full GLMM at moderate n. It scales near-linearly (R² > 0.99). At n = 2 million, VPC & PCV are computed in **22 seconds**. GLMM/MAIHDA becomes impractical beyond 100K on standard hardware.
+The fast method-of-moments is 92–144× faster than full GLMM at moderate sample sizes. It scales near-linearly with n (R² > 0.99). At n = 2 million, VPC and PCV are computed in 22 seconds. Full GLMM becomes impractical beyond ~100K on standard laptop hardware.
 
 ![Computation time scaling](inst/benchmark/benchmark_time.png)
 ![Fast method linear scaling](inst/benchmark/benchmark_fast_linear.png)
 
 #### VPC Accuracy (Null Model)
 
-The corrected fast estimator (v0.2.1) uses **unweighted variance** rather than precision weights, eliminating the ~9 pp systematic bias present in v0.2.0.
+v0.2.1 uses unweighted (sample) variance instead of the precision-weighted formula in v0.2.0.
 
 **v0.2.1 (corrected):**
 
@@ -327,7 +329,7 @@ The corrected fast estimator (v0.2.1) uses **unweighted variance** rather than p
 | 1,000,000 | 23.16% | — | — | — |
 | 2,000,000 | 23.30% | — | — | — |
 
-> **Key finding:** The corrected fast method-of-moments now matches glmer/MAIHDA to **within 0.5 pp on average** (standard error across 3 seeds). The ~9 pp systematic bias in v0.2.0 was caused by precision weights downweighting extreme strata that carry the most between-stratum signal. Switching to unweighted (sample) variance eliminates this bias entirely. **`method="fast"` is now suitable for both exploration AND publication-ready estimates** (though glmer remains the gold standard for final reporting).
+Across 3 seeds, the average absolute difference between fast and glmer is under 1 pp. The v0.2.0 precision-weighted estimator had a systematic ~9 pp downward bias because precision weights (1/sampling variance) downweight extreme strata that carry most between-stratum signal. The unweighted estimator corrects this.
 
 ![VPC comparison](inst/benchmark/benchmark_vpc.png)
 
@@ -354,9 +356,9 @@ The corrected fast estimator (v0.2.1) uses **unweighted variance** rather than p
 
 > All methods fit within standard laptop RAM. glmer adds modest matrix factorization overhead.
 
-### Cross-validation (NHANES Data)
+### Cross-validation
 
-We validated `imaihda(method="glmer")` against CRAN `MAIHDA` on the bundled NHANES data (`maihda_health_data`). Both produce **identical** variance components:
+`imaihda(method="glmer")` and CRAN `MAIHDA` produce identical variance components on the NHANES data (`maihda_health_data`):
 
 | Metric | CRAN `MAIHDA` | `imaihda` (glmer) | Match |
 |--------|:------------:|:-----------------:|:-----:|
@@ -365,45 +367,73 @@ We validated `imaihda(method="glmer")` against CRAN `MAIHDA` on the bundled NHAN
 | VPC (null) | 0.0636 | 0.0636 | ✅ 1e-6 |
 | PCV | 0.826 | 0.826 | ✅ 1e-4 |
 
-> 51 testthat assertions (including 12 cross-validation tests) confirm numeric equivalence.
+51 testthat assertions, including 12 cross-validation tests, confirm equivalence.
 
-### Method Selection Guide
+### When to Use Which
 
-| Task | Recommended | Rationale |
-|------|:-----------:|-----------|
-| Pilot / exploratory analysis | `method="fast"` | 0.3s at 10K |
-| Simulation stress-testing (100+ runs) | `method="fast"` | 100× speedup at scale |
-| Methodological sensitivity sweeps | `method="fast"` | Rapid parameter space exploration |
-| Publication-ready estimates | `method="fast"` or `method="glmer"` | Fast now within <1 pp of glmer |
-| Final reporting / peer review | `method="glmer"` | GLMM is accepted standard |
-| Real survey data with design weights | `CRAN-MAIHDA` | Built-in `WeMix` support |
-| Bootstrap confidence intervals | `CRAN-MAIHDA` | Parametric/bootstrap CI |
-| Stepwise PCV decomposition | Both packages | imaihda adds fast method |
-| Detection-bias diagnostics | `imaihda` (unique) | `plot_sweep()` only in imaihda |
-| Cross-package validation | `imaihda` (unique) | `compare_packages()` only in imaihda |
+| Task | Recommended | Notes |
+|------|:-----------:|-------|
+| Exploratory analysis / piloting | `imaihda-fast` | 0.3s at 10K, result within <1 pp of GLMM |
+| Simulation studies (100+ replications) | `imaihda-fast` | 100× faster than GLMM |
+| Sensitivity sweeps over parameter space | `imaihda-fast` | `plot_sweep()` for detection bias |
+| Empirical analysis (real survey data) | CRAN `MAIHDA` | Bootstrap CIs, survey weights, model comparison |
+| Bayesian estimation / priors | CRAN `MAIHDA` (`engine="brms"`) | Not available in imaihda |
+| Survey data with design weights | CRAN `MAIHDA` (`engine="wemix"`) | Not available in imaihda |
+| Longitudinal / growth-curve MAIHDA | CRAN `MAIHDA` | Not available in imaihda |
+| Crossed-dimensions decomposition | CRAN `MAIHDA` | Not available in imaihda |
+| Interactive exploration | CRAN `MAIHDA` | Shiny dashboard |
+| Synthetic data with detection bias | `imaihda` | `simulate_intersectional_data()` |
+| Cross-package validation | `imaihda` | `compare_packages()` |
+| Cross-language (Python–R) checks | `imaihda` | Dual implementation |
 
 ### Full Feature Matrix
 
-| Capability | CRAN `MAIHDA` | `imaihda` v0.2.1 |
-|------------|:------------:|:-----------------:|
-| GLMM-based VPC & PCV | ✅ `lme4`/`brms` | ✅ `method="glmer"` |
-| Fast method-of-moments diagnostic | — | ✅ `method="fast"` (<1 pp from glmer, 92–144× faster) |
-| Stepwise PCV decomposition | ✅ | ✅ (fast + glmer dual method) |
-| Discriminatory accuracy (AUC, MOR) | ✅ | ✅ `discriminatory_accuracy()` |
-| Response-scale VPC | ✅ | ✅ `response_vpc()` |
-| Stratum interactions (multiple testing) | ✅ BH only | ✅ Bonferroni + BH |
-| Synthetic data generation | — | ✅ `simulate_intersectional_data()` |
-| SES-patterned detection bias | — | ✅ configurable |
-| Pre-built stress-test scenarios (A–E) | — | ✅ 5 scenarios |
-| Automated benchmark evaluation | — | ✅ 6 pass/fail checks |
-| Python ↔ R cross-language validation | — | ✅ dual implementation |
-| Publication-quality plots | Basic | ✅ `plot_vpc()`, `plot_strata()`, `plot_sweep()` |
-| Automated cross-package comparison | — | ✅ `compare_packages()` |
-| Bootstrap confidence intervals | ✅ parametric | — |
-| Survey weights (design) | ✅ `WeMix` | — |
-| Shiny dashboard | ✅ `run_maihda_app()` | — |
-| Group comparison | ✅ | — |
-| Cross-classified / longitudinal | ✅ | — |
+All 25 exported CRAN MAIHDA functions and their imaihda equivalents (or lack thereof):
+
+| CRAN MAIHDA function | `imaihda` equivalent | Notes |
+|----------------------|:--------------------:|-------|
+| `maihda()` (lme4 engine) | `fit_imaihda(method="glmer")` | Same estimates |
+| `maihda()` (brms engine) | — | Bayesian not implemented |
+| `maihda()` (wemix engine) | — | Survey weights not implemented |
+| `maihda()` two-model decomposition | `fit_imaihda()` default | Same logic |
+| `maihda()` crossed-dimensions | — | Not implemented |
+| `maihda()` longitudinal | — | Not implemented |
+| `maihda()` bootstrap CI | — | Not implemented |
+| `maihda()` group comparison | — | Not implemented |
+| `fit_maihda()` | `fit_imaihda()` | Single-model fit |
+| `make_strata()` | — | Uses pre-built stratum column |
+| `stepwise_pcv()` | `stepwise_pcv()` | imaihda adds `method="fast"` |
+| `calculate_pvc()` | `pcv()` | Simple algebraic function |
+| `maihda_interactions()` | `stratum_interactions()` | BH + Bonferroni correction |
+| `maihda_discriminatory_accuracy()` | `discriminatory_accuracy()` | AUC + MOR |
+| `maihda_auc()` | Included in `discriminatory_accuracy()` | |
+| `maihda_mor()` | Included in `discriminatory_accuracy()` | |
+| `maihda_vpc_response()` | `response_vpc()` | Delta-method + simulation |
+| `maihda_cumulative()` | — | Ordinal outcomes not supported |
+| `maihda_ic()` | — | Model comparison not implemented |
+| `maihda_table()` | — | Stratum summary table |
+| `predict_maihda()` | — | Prediction not implemented |
+| `compare_maihda()` | `compare_packages()` | Different purpose |
+| `compare_maihda_groups()` | — | Group comparison not implemented |
+| `compute_maihda_ternary_data()` | — | Ternary plots not implemented |
+| `maihda_ternary_plot()` | — | Ternary plots not implemented |
+| `plot_comparison()` | — | Model comparison plots |
+| `plot_group_comparison()` | — | Group comparison plots |
+| `plot_prediction_deviation_panels()` | — | Model diagnostics |
+| `run_maihda_app()` | — | Shiny app not implemented |
+| `glance()` / `tidy()` | — | Broom integration |
+
+**imaihda-only functions (no CRAN MAIHDA equivalent):**
+
+| Function | Purpose |
+|----------|---------|
+| `simulate_intersectional_data()` | Synthetic data with configurable detection bias |
+| `scenario_grid()` + `evaluate_benchmarks()` | 5 pre-built stress-test scenarios (A–E) |
+| `plot_vpc()` | VPC bar chart with fast/glmer overlay |
+| `plot_strata()` | Caterpillar plot with significance highlighting |
+| `plot_sweep()` | Detection-bias sweep visualization |
+| `compare_packages()` | Automated imaihda vs CRAN MAIHDA side-by-side |
+| `fit_imaihda(method="fast")` | Method-of-moments estimator (~100× faster, <1 pp bias) |
 
 ## R Package vs. Standalone Scripts
 
@@ -430,7 +460,7 @@ The R package `imaihda` (v0.2.1) replaces the earlier standalone R scripts (`R/*
 <details>
 <summary><strong>1. Is this a new estimator for MAIHDA?</strong></summary>
 
-No. This is a **methodological demonstration** using a fast empirical-logit diagnostic for repeated stress-testing. It is not a substitute for full random-intercept GLMM estimation (e.g., `lme4::glmer` in R or equivalent mixed-model implementations). For empirical research, estimates must be validated against the modelling strategy used by the target research group.
+No. This is a **methodological demonstration** using a fast empirical-logit diagnostic for repeated stress-testing. As of v0.2.1, the fast method-of-moments estimator produces VPC values within ~1 pp of the GLMM estimate, making it usable for exploratory analysis. For empirical research with real survey data, CRAN `MAIHDA` remains the more complete tool (Bayesian estimation, bootstrap CIs, survey weights, model comparison).
 </details>
 
 <details>
@@ -442,7 +472,7 @@ Because they use **different random number generators**: PCG64 in NumPy vs. Mers
 <details>
 <summary><strong>3. Can I use this package with real data?</strong></summary>
 
-You may use `fit_imaihda()` for rapid exploratory diagnostics, but the function employs a **method-of-moments approximation** that subtracts estimated binomial sampling noise — it is not a full GLMM estimator. For empirical publication, use a proper random-intercept logistic model such as `lme4::glmer(y ~ (1 | stratum) + covariates, family = binomial)`.
+Yes, with qualifications. `fit_imaihda(method="fast")` produces VPC values within ~1 pp of the GLMM estimate for binary outcomes with 2×3×3×2 strata (tested at n = 2K–2M). For publication, consider running `method="glmer"` in parallel as a sensitivity check. For real survey data with design weights, longitudinal designs, or Bayesian priors, use CRAN `MAIHDA` which supports those features natively.
 </details>
 
 <details>
