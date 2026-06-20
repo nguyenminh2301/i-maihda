@@ -1,296 +1,305 @@
-# I-MAIHDA HIC-MIC Simulation v3.1
+# I-MAIHDA HIC-MIC Simulation v3.2
 
-> **Tiếng Việt** | [English version below](#english)
+> **Tiếng Việt:** [README_vi.md](README_vi.md)
 
-Bộ công cụ mô phỏng dữ liệu tổng hợp kiểm định độ nhạy của **VPC** và **PCV** — hai chỉ số cốt lõi trong I-MAIHDA — trước tác động của tỉ lệ hiện mắc, strata thưa, và sai số phát hiện có khuôn mẫu SES. Repository gồm **Python** (bản chính) và **R package `imaihda`** (bản tái lập hoàn chỉnh, có thể cài đặt).
+A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda`** (full reproduction).
 
-⚠️ **Không sử dụng dữ liệu thật.** Không có tuyên bố thực nghiệm về bất kỳ quần thể nào. Đây là minh chứng phương pháp luận.
+⚠️ **No real data.** This repository uses only synthetic data. It makes no empirical claim about any population. It is a methodological demonstration.
 
 ---
 
-##  Mục lục
+## Table of Contents
 
-1. [Câu hỏi nghiên cứu](#câu-hỏi-nghiên-cứu)
-2. [Phương pháp](#phương-pháp)
-3. [Kịch bản kiểm định](#kịch-bản-kiểm-định)
-4. [Kết quả benchmark](#kết-quả-benchmark)
-5. [Hình minh họa](#hình-minh-họa)
-6. [R package `imaihda`](#r-package-imaihda)
-7. [Đối chứng Python ↔ R](#đối-chứng-python--r)
-8. [So sánh R package với R scripts cũ](#so-sánh-r-package-với-r-scripts-cũ)
+1. [Research Question](#research-question)
+2. [Method](#method)
+3. [Scenarios](#scenarios)
+4. [Benchmark Results](#benchmark-results)
+5. [Figures](#figures)
+6. [R Package `imaihda`](#r-package-imaihda)
+7. [Cross-Language Validation](#cross-language-validation)
+8. [R Package vs. Standalone Scripts](#r-package-vs-standalone-scripts)
 9. [FAQs](#faqs)
-10. [Tài liệu tham khảo](#tài-liệu-tham-khảo)
+10. [References](#references)
 
 ---
 
-## Câu hỏi nghiên cứu
+## Research Question
 
-Nếu một cohort thu nhập trung bình (MIC) cho thấy **VPC cao hơn** hoặc **PCV thấp hơn** so với cohort thu nhập cao (HIC), liệu điều đó có nhất thiết nghĩa là cấu trúc bất bình đẳng giao thoa khác biệt?
+If a middle-income-country (MIC) cohort exhibits **higher VPC** or **lower PCV** than a high-income-country (HIC) cohort, does that necessarily imply a different intersectional structure of health inequality?
 
-**Trả lời: Không.** VPC và PCV có thể dao động theo tỉ lệ hiện mắc, strata thưa, và sai số phát hiện có khuôn mẫu SES — ngay cả khi cấu trúc giao thoa thực sự không đổi.
-
----
-
-## Phương pháp
-
-Mô phỏng cá thể lồng trong **36 strata giao thoa** (giới tính × học vấn × tài sản × nông thôn). Tính toán chẩn đoán nhanh qua **empirical logit** và **weighted method-of-moments**, không dùng GLMM đầy đủ.
-
-### Công thức
-
-**VPC** (Variance Partition Coefficient) trên thang latent logistic:
-
-$$\text{VPC} = \frac{\sigma^2_{\text{stratum}}}{\sigma^2_{\text{stratum}} + \pi^2/3} \times 100\%$$
-
-**PCV** (Proportional Change in Variance):
-
-$$\text{PCV} = \frac{\sigma^2_{\text{null}} - \sigma^2_{\text{main}}}{\sigma^2_{\text{null}}} \times 100\%$$
-
-Trong đó:
-- `σ²_null` = phương sai giữa các strata từ mô hình null (chỉ có strata, không có biến giải thích)
-- `σ²_main` = phương sai giữa các strata còn lại sau khi thêm hiệu ứng chính cộng-gộp
-- `π²/3 ≈ 3.29` = phương sai mức cá thể của phân phối logistic chuẩn
+**Answer: No.** VPC and PCV can shift with outcome prevalence, sparse intersectional strata, and SES-patterned under-detection — even when the true intersectional structure is unchanged. Raw HIC‑MIC comparisons of VPC/PCV require diagnostic scrutiny.
 
 ---
 
-## Kịch bản kiểm định
+## Method
 
-| Kịch bản | Mục đích |
-|----------|----------|
-| **A** | Gradient xã hội thuần cộng-gộp, phát hiện đồng đều |
-| **B** | Có tương tác giao thoa thực sự, phát hiện đồng đều |
-| **C** | Cấu trúc cộng-gộp với sai số phát hiện theo khuôn mẫu SES |
-| **D** | Tương tác giao thoa + sai số phát hiện SES |
-| **E** | Tương tác giao thoa, bệnh hiếm, strata thưa |
+The workflow simulates individuals nested in **36 intersectional strata** defined by sex (2) × education (3) × wealth (3) × rural/less-resourced setting (2). It computes fast I-MAIHDA diagnostics using empirical-stratum logits and a main-effects logistic model, with a **method-of-moments** estimator that subtracts expected binomial sampling noise from the observed weighted variance of stratum-level residuals. This is a simulation diagnostic, not a substitute for full random-intercept GLMM in empirical work.
 
----
+### Formulas
 
-## Kết quả benchmark
+**VPC** — Variance Partition Coefficient on the latent logistic scale:
 
-### Python (PCG64 RNG)
+$$VPC = \frac{\sigma^2_{\text{stratum}}}{\sigma^2_{\text{stratum}} + \pi^2/3} \times 100\%$$
 
-| Scenario | Tỉ lệ hiện mắc | VPC null | VPC main | PCV | Strata nhỏ nhất |
-|----------|:--------------:|:--------:|:--------:|:---:|:---------------:|
-| A | 23.3% | 4.32 | 0.00 | **100.0** | 144 |
-| B | 27.1% | 22.58 | 15.78 | **35.8** | 144 |
-| C | 11.3% | 0.00 | 0.00 | NaN | 144 |
-| D | 13.7% | 13.68 | 8.80 | **39.1** | 144 |
-| E | 9.1% | 14.70 | 9.44 | **39.5** | 1 |
+**PCV** — Proportional Change in Variance from the null (stratum-only) model to the additive main-effects model:
 
-### R (`imaihda` package, Mersenne Twister RNG)
+$$PCV = \frac{\sigma^2_{\text{null}} - \sigma^2_{\text{main}}}{\sigma^2_{\text{null}}} \times 100\%$$
 
-| Scenario | Tỉ lệ hiện mắc | VPC null | VPC main | PCV | Strata nhỏ nhất |
-|----------|:--------------:|:--------:|:--------:|:---:|:---------------:|
-| A | 23.6% | 4.50 | 0.00 | **100.0** | 130 |
-| B | 26.3% | 17.20 | 9.12 | **51.7** | 130 |
-| C | 11.6% | 0.82 | 0.18 | **78.0** | 130 |
-| D | 13.0% | 16.06 | 8.02 | **54.5** | 130 |
-| E | 11.6% | 19.47 | 2.98 | **87.3** | 2 |
+Where:
+- $\sigma^2_{\text{null}}$ = between-stratum variance from the null model (intersectional strata only)
+- $\sigma^2_{\text{main}}$ = residual between-stratum variance after additive main effects of sex, education, wealth, and rural
+- $\pi^2/3 \approx 3.29$ = individual-level variance of the standard logistic distribution
 
-### Pass/fail benchmarks — Cả Python và R đều PASS cả 6/6
+### Data-generating process
 
-| # | Tiêu chí | Python | R |
-|---|----------|:------:|:--:|
-| 1 | A thuần cộng-gộp: PCV ≥ 80, VPC_main < 1 | ✅ | ✅ |
-| 2 | B có tương tác thực: VPC_null(B) > VPC_null(A) + 5 | ✅ | ✅ |
-| 3 | B để lại phương sai dư: PCV < 70 | ✅ | ✅ |
-| 4 | C sai số phát hiện làm giảm tỉ lệ hiện mắc | ✅ | ✅ |
-| 5 | D sai số phát hiện che lấp VPC tương tác | ✅ | ✅ |
-| 6 | E strata thưa được gắn cờ | ✅ | ✅ |
-
-> **Kết luận chính:** Cả Python và R đều xác nhận rằng VPC/PCV nhạy với prevalence, strata thưa, và sai số phát hiện. Không thể so sánh HIC‑MIC một cách thô nếu không có chẩn đoán đi kèm.
+1. **Stratum allocation.** Individuals are assigned to strata with equal probability (6000 individuals / 36 strata ≈ 167 per stratum), or with gamma-distributed weights in the sparse scenario.
+2. **Additive linear predictor.** $\eta = \beta_0 + \beta_1 \cdot \text{sex} + \beta_2 \cdot \text{education} + \beta_3 \cdot \text{wealth} + \beta_4 \cdot \text{rural}$, with $\beta_0 = -2.10$ (23% baseline prevalence).
+3. **Residual intersectional heterogeneity (optional).** Structured interaction effects added at the stratum level, then centered to be orthogonal to the intercept.
+4. **Differential detection (optional).** True cases are less likely to be recorded in disadvantaged strata: $\text{logit}(P(\text{detected})) = 2.0 - \delta \cdot \text{education} - \delta \cdot \text{wealth} - 0.4\delta \cdot \text{rural}$.
 
 ---
 
-## Hình minh họa
+## Scenarios
 
-### 1. Phân bố VPC‑PCV theo kịch bản
+| Scenario | Description | Key Parameters |
+|:--------:|-------------|----------------|
+| **A** | Additive social gradient, equal detection | Baseline |
+| **B** | Residual intersectional heterogeneity, equal detection | `interaction_sd = 0.90` |
+| **C** | Additive structure with SES-patterned under-detection | `detection_strength = 0.80` |
+| **D** | Residual interaction + SES-patterned under-detection | `interaction_sd = 0.90`, `detection_strength = 0.80` |
+| **E** | Residual interaction, rare outcome, sparse strata | `n = 3500`, `prevalence_shift = -3.00`, `interaction_sd = 0.90`, `sparse = TRUE` |
+
+---
+
+## Benchmark Results
+
+### Scenario-level estimates
+
+#### Python (PCG64 RNG, NumPy `default_rng`)
+
+| Scenario | Prevalence | VPC null | VPC main | PCV | Min stratum n |
+|:--------:|:----------:|:--------:|:--------:|:---:|:-------------:|
+| **A** | 23.3% | 4.32 | 0.00 | **100.0** | 144 |
+| **B** | 27.1% | 22.58 | 15.78 | **35.8** | 144 |
+| **C** | 11.3% | 0.00 | 0.00 | NaN | 144 |
+| **D** | 13.7% | 13.68 | 8.80 | **39.1** | 144 |
+| **E** | 9.1% | 14.70 | 9.44 | **39.5** | 1 |
+
+#### R (`imaihda` package, Mersenne Twister RNG)
+
+| Scenario | Prevalence | VPC null | VPC main | PCV | Min stratum n |
+|:--------:|:----------:|:--------:|:--------:|:---:|:-------------:|
+| **A** | 23.6% | 4.50 | 0.00 | **100.0** | 130 |
+| **B** | 26.3% | 17.20 | 9.12 | **51.7** | 130 |
+| **C** | 11.6% | 0.82 | 0.18 | **78.0** | 130 |
+| **D** | 13.0% | 16.06 | 8.02 | **54.5** | 130 |
+| **E** | 11.6% | 19.47 | 2.98 | **87.3** | 2 |
+
+### Pass/Fail Benchmarks (both languages identical)
+
+| # | Criterion | Python | R |
+|---|-----------|:------:|:--:|
+| 1 | A is additive-dominant: PCV ≥ 80, VPC_main < 1 | ✅ | ✅ |
+| 2 | B interaction increases VPC: VPC_null(B) > VPC_null(A) + 5pp | ✅ | ✅ |
+| 3 | B leaves residual variance: PCV < 70 | ✅ | ✅ |
+| 4 | C detection reduces observed prevalence | ✅ | ✅ |
+| 5 | D detection can mask interaction VPC: VPC_null(D) < VPC_null(B) | ✅ | ✅ |
+| 6 | E sparse strata are flagged: min_n(E) < min_n(B) | ✅ | ✅ |
+
+> **Takeaway:** Both Python and R confirm that VPC and PCV move with prevalence, sparse strata, and differential detection. Raw HIC‑MIC comparisons are not interpretable without accompanying stratum diagnostics.
+
+---
+
+## Figures
+
+### 1. VPC-PCV scenario map
 
 ![VPC-PCV scenario plot](figures/scenario_vpc_pcv.png)
 
-**Diễn giải:** Kịch bản A (góc trên bên trái) thể hiện cấu trúc thuần cộng-gộp (PCV=100%). B dịch chuyển sang phải (VPC cao hơn) và xuống dưới (PCV thấp hơn) do có tương tác giao thoa thực sự. D cho thấy sai số phát hiện có thể che lấp VPC của tương tác. E minh họa tác động của strata thưa.
+**Interpretation:** Scenario A (top-left) exhibits a purely additive structure (PCV = 100%). Adding true residual intersectional heterogeneity (B) shifts the point rightward (higher VPC) and downward (lower PCV). Scenario D demonstrates that detection bias can mask VPC even when the same residual interaction is present. Scenario E illustrates the effect of sparse strata on both VPC and PCV.
 
-### 2. Quét sai số phát hiện (detection sweep)
+### 2. Detection-bias sweep
 
 ![Detection sweep](figures/detection_sweep.png)
 
-**Diễn giải:** Khi cường độ sai số phát hiện theo khuôn mẫu SES tăng lên, tỉ lệ hiện mắc quan sát giảm (đường đứt nét). VPC ban đầu giảm (che lấu) rồi sau đó có thể tăng trở lại ở mức sai số rất cao — cho thấy tác động không đơn điệu.
+**Interpretation:** As SES-patterned under-detection strength increases, observed prevalence declines monotonically (dashed line). VPC exhibits a **non-monotonic** response: it initially decreases (masking) and may subsequently increase at extreme detection levels — because some strata lose nearly all observed cases while others retain detectable events. This non-monotonicity underscores why detection bias cannot be ignored in cross-cohort VPC comparisons.
 
 ---
 
-## R package `imaihda`
+## R Package `imaihda`
 
-###  Cài đặt
+An installable, documented R package containing the full simulation and diagnostic pipeline. Six functions are exported; six are internal.
+
+### Installation
 
 ```r
-# Cài từ GitHub
+# From GitHub
 remotes::install_github("nguyenminh2301/-i-maihda", subdir = "imaihda")
 
-# Hoặc clone về cài local
+# Or clone and install locally
 # git clone https://github.com/nguyenminh2301/-i-maihda.git
-# devtools::install("duong-dan/-i-maihda/imaihda")
+# devtools::install("path/to/-i-maihda/imaihda")
 ```
 
-**Yêu cầu:** R ≥ 4.0, packages: `stats` (base), `ggplot2` (gợi ý), `testthat` (gợi ý).
+**Requirements:** R ≥ 4.0. Dependencies: `stats` (base R). Suggested: `ggplot2`, `testthat`, `viridis`.
 
-###  Load package
+### Usage
 
 ```r
 library(imaihda)
 ```
 
-###  Sử dụng từng hàm
-
-#### `vpc_latent()` — Tính VPC từ phương sai strata
+#### `vpc_latent()` — Compute VPC from stratum variance
 
 ```r
-vpc_latent(0.5)     # 13.19% — VPC khi σ²_stratum = 0.5
-vpc_latent(0)       # 0%
-vpc_latent(pi^2/3)  # 50% — VPC = 50% khi σ² = π²/3
+vpc_latent(0.5)      # 13.2% — moderate between-stratum inequality
+vpc_latent(0)        # 0%
+vpc_latent(pi^2 / 3) # 50% — stratum variance equals individual variance
 ```
 
-#### `pcv()` — Tính PCV từ hai phương sai
+#### `pcv()` — Compute Proportional Change in Variance
 
 ```r
-pcv(1.0, 0.25)  # 75% — hầu hết phương sai được giải thích bởi hiệu ứng chính
-pcv(0.5, 0.4)   # 20% — còn nhiều tương tác dư
-pcv(0, 0)       # NaN — không xác định khi phương sai null ≤ 0
+pcv(1.0, 0.25)  # 75% — most variance explained by additive effects
+pcv(0.5, 0.4)   # 20% — substantial residual interaction
+pcv(0, 0)       # NaN — undefined when null variance ≤ 0
 ```
 
-#### `simulate_intersectional_data()` — Sinh dữ liệu tổng hợp
+#### `simulate_intersectional_data()` — Generate synthetic data
 
 ```r
-# Kịch bản cơ bản (thuần cộng-gộp)
+# Baseline (additive, equal detection)
 df <- simulate_intersectional_data(n = 2000, seed = 42)
 
-# Có tương tác giao thoa
+# With residual intersectional heterogeneity
 df_b <- simulate_intersectional_data(n = 2000, interaction_sd = 0.9, seed = 42)
 
-# Có sai số phát hiện SES
+# With SES-patterned under-detection
 df_c <- simulate_intersectional_data(n = 2000, detection_strength = 0.8, seed = 42)
 
-# Strata thưa, bệnh hiếm
+# Sparse strata, rare outcome
 df_e <- simulate_intersectional_data(
-  n = 1000, prevalence_shift = -3.0, interaction_sd = 0.9,
-  sparse = TRUE, seed = 42
+  n = 1000, prevalence_shift = -3.0,
+  interaction_sd = 0.9, sparse = TRUE, seed = 42
 )
 
-# So sánh tỉ lệ hiện mắc quan sát và thực
-mean(df_c$y)       # quan sát (thấp hơn do sai số phát hiện)
-mean(df_c$y_true)  # thực
+# Compare observed vs true prevalence under detection bias
+mean(df_c$y)       # observed (lower due to under-detection)
+mean(df_c$y_true)  # true (higher)
 ```
 
-#### `fit_imaihda()` — Chẩn đoán MAIHDA một lần gọi
+#### `fit_imaihda()` — One-call MAIHDA diagnostics
 
 ```r
-df <- simulate_intersectional_data(n = 3000, seed = 123)
+df  <- simulate_intersectional_data(n = 3000, seed = 123)
 res <- fit_imaihda(df)
 
 res$n_strata              # 36
 res$overall_prevalence    # ~0.23
-res$vpc_null              # VPC từ mô hình null
-res$vpc_main              # VPC sau hiệu ứng chính
-res$pcv                   # PCV (%)
-res$var_null              # Phương sai giữa strata (null)
-res$var_main              # Phương sai giữa strata (main)
-res$min_stratum_n         # Cỡ strata nhỏ nhất
+res$vpc_null              # VPC from null model (%)
+res$vpc_main              # VPC after additive main effects (%)
+res$pcv                   # Proportional Change in Variance (%)
+res$var_null              # Between-stratum variance (null)
+res$var_main              # Between-stratum variance (main)
+res$min_stratum_n         # Smallest stratum size
 ```
 
-#### `scenario_grid()` + `evaluate_benchmarks()` — Chạy toàn bộ 5 kịch bản
+#### `scenario_grid()` + `evaluate_benchmarks()` — Full pipeline
 
 ```r
 grid <- scenario_grid()
 results <- do.call(rbind, lapply(names(grid), function(nm) {
-  res <- fit_scenario(nm, grid[[nm]])
-  as.data.frame(res)
+  as.data.frame(fit_scenario(nm, grid[[nm]]))
 }))
 benchmarks <- evaluate_benchmarks(results)
-print(benchmarks)  # 6 dòng pass/fail
+print(benchmarks)  # 6 pass/fail rows
 ```
 
-###  Chạy tests
+#### Running tests
 
 ```r
-devtools::test("imaihda")   # 39 testthat tests
+devtools::test("imaihda")   # 39 testthat assertions
 ```
 
 ---
 
-## Đối chứng Python ↔ R
+## Cross-Language Validation
 
-### Khác biệt về RNG
+### RNG differences
 
-| | Python | R |
-|---|---|---|
+| Aspect | Python | R |
+|--------|--------|---|
 | **Engine** | PCG64 (`numpy.random.default_rng`) | Mersenne Twister (`set.seed`) |
-| **Hạt giống** | 42 | 42 |
-| **Kết quả số** | Khác | Khác |
-| **Kết luận benchmark** | Giống (6/6 pass) | Giống (6/6 pass) |
+| **Seed** | 42 | 42 |
+| **Numeric output** | Different | Different |
+| **Benchmark outcome** | 6/6 pass | 6/6 pass |
 
-###  So sánh từng chỉ số
+### Metric-by-metric comparison
 
-| Chỉ số | Python (điển hình) | R (điển hình) | Khớp định tính? |
-|--------|:------------------:|:-------------:|:---------------:|
-| VPC_null(A) | 4.32 | 4.50 | ✅ Thấp |
-| VPC_null(B) | 22.58 | 17.20 | ✅ Cao hơn A |
-| PCV(A) | 100.0 | 100.0 | ✅ Cộng-gộp hoàn toàn |
-| PCV(B) | 35.8 | 51.7 | ✅ < 70 (còn tương tác dư) |
-| Tỉ lệ C/A | 11.3/23.3 | 11.6/23.6 | ✅ Giảm ~50% |
-| VPC(D) < VPC(B) | Có (13.68 < 22.58) | Có (16.06 < 17.20) | ✅ Che lấp |
-| Min_n(E) | 1 | 2 | ✅ Thưa |
+| Metric | Python (typical) | R (typical) | Agreement |
+|--------|:----------------:|:-----------:|:---------:|
+| VPC_null(A) | 4.32 | 4.50 | ✅ Low in both |
+| VPC_null(B) > VPC_null(A) | Yes (22.58 > 4.32) | Yes (17.20 > 4.50) | ✅ |
+| PCV(A) | 100.0 | 100.0 | ✅ Purely additive |
+| PCV(B) < 70 | Yes (35.8) | Yes (51.7) | ✅ Residual interaction |
+| Prevalence C/A ratio | 11.3/23.3 | 11.6/23.6 | ✅ ~50% reduction |
+| VPC(D) < VPC(B) | Yes (13.68 < 22.58) | Yes (16.06 < 17.20) | ✅ Masking effect |
+| Sparse strata in E | min_n = 1 | min_n = 2 | ✅ Flagged |
 
-> Cả hai ngôn ngữ đều đi đến **cùng kết luận định tính**. Khác biệt về số liệu tuyệt đối là do RNG, không ảnh hưởng đến diễn giải khoa học.
+> Both implementations reach **identical qualitative conclusions**. Numerical differences arise from RNG engine divergence and are expected in any cross-language reproduction using stochastic simulation. They do not affect the scientific interpretation.
 
 ---
 
-## So sánh R package với R scripts cũ
+## R Package vs. Standalone Scripts
 
-| Tiêu chí | R scripts cũ (v3.1) | R package `imaihda` (v3.2) |
-|----------|---------------------|---------------------------|
-| **Cấu trúc** | File `.R` rời rạc trong `R/` | Package chuẩn với DESCRIPTION, NAMESPACE |
-| **Cài đặt** | `source("R/simulate.R")` thủ công | `install_github()` hoặc `devtools::install()` |
-| **Tài liệu** | Comment nội bộ | Roxygen2 với `@examples`, `@references` |
-| **Hàm exported** | Không phân biệt | 6 hàm public, 6 hàm internal |
-| **Tests** | 4 test_that blocks (thủ công) | 39 testthat assertions (tự động) |
-| **Tương thích** | Gắn với thư mục dự án WZB | Độc lập, dùng được ở mọi dự án |
-| **Kết quả** | Khớp với Python về benchmark | **Giống hệt** scripts cũ (cùng code, cùng RNG) |
+The R package `imaihda` (v3.2) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
 
-> **Tính nhất quán:** R package dùng **cùng thuật toán** với R scripts cũ. Với cùng seed, kết quả **giống hệt 100%** vì logic tính toán không đổi — chỉ khác về cách tổ chức code.
+| Criterion | Standalone scripts (v3.1) | R package (v3.2) |
+|-----------|---------------------------|-------------------|
+| **Structure** | Loose `.R` files, manual `source()` | Standard package: DESCRIPTION, NAMESPACE |
+| **Installation** | Copy files, `source()` manually | `install_github()` or `devtools::install()` |
+| **Documentation** | Inline comments only | Roxygen2 with `@examples`, `@references`, `@export` |
+| **Exported API** | No public/private distinction | 6 exported, 6 internal functions |
+| **Testing** | 4 ad-hoc `test_that` blocks | 39 automated `testthat` assertions |
+| **Portability** | Tied to WZB project directory | Self-contained, usable in any project |
+| **Reproducibility** | Same algorithm | Same algorithm — **100% identical results** at same seed |
+
+> **Consistency confirmed:** The package uses the same computational logic as the standalone scripts. At identical seeds, numerical output is bitwise identical because the algorithms and RNG calls are unchanged — only the code organization differs.
 
 ---
 
 ## FAQs
 
 <details>
-<summary><b>1. Đây có phải là công cụ ước lượng mới cho MAIHDA không?</b></summary>
+<summary><strong>1. Is this a new estimator for MAIHDA?</strong></summary>
 
-Không. Đây là **minh chứng phương pháp luận** dùng empirical-logit diagnostic nhanh để stress-test VPC/PCV. Trong nghiên cứu thực nghiệm, cần dùng GLMM đầy đủ (ví dụ: `lme4::glmer` trong R hoặc `statsmodels.MixedLM` trong Python).
+No. This is a **methodological demonstration** using a fast empirical-logit diagnostic for repeated stress-testing. It is not a substitute for full random-intercept GLMM estimation (e.g., `lme4::glmer` in R or equivalent mixed-model implementations). For empirical research, estimates must be validated against the modelling strategy used by the target research group.
 </details>
 
 <details>
-<summary><b>2. Tại sao kết quả Python và R khác nhau?</b></summary>
+<summary><strong>2. Why do Python and R produce different numbers?</strong></summary>
 
-Vì **RNG engine khác nhau** (PCG64 vs Mersenne Twister). Cùng seed `42` nhưng chuỗi số ngẫu nhiên khác → dữ liệu mô phỏng khác → số liệu VPC/PCV khác. Tuy nhiên, **kết luận định tính và benchmark pass/fail giống hệt nhau**. Đây là đặc điểm mong đợi của bất kỳ cross-language reproduction nào dùng RNG.
+Because they use **different random number generators**: PCG64 in NumPy vs. Mersenne Twister in R. With the same seed (`42`), the generated sequences differ, yielding different simulated datasets and therefore different VPC/PCV point estimates. **All 6/6 benchmarks pass in both languages**, and all qualitative conclusions are identical. This is expected behaviour in any cross-language stochastic reproduction.
 </details>
 
 <details>
-<summary><b>3. Tôi có thể dùng package này với dữ liệu thật không?</b></summary>
+<summary><strong>3. Can I use this package with real data?</strong></summary>
 
-Có thể dùng `fit_imaihda()` để chẩn đoán nhanh, nhưng phải hiểu rằng đây là **xấp xỉ chẩn đoán** (method-of-moments), không phải ước lượng GLMM đầy đủ. Đối với dữ liệu thật và công bố khoa học, dùng `lme4::glmer(y ~ (1|stratum) + covariates, family=binomial)`.
+You may use `fit_imaihda()` for rapid exploratory diagnostics, but the function employs a **method-of-moments approximation** that subtracts estimated binomial sampling noise — it is not a full GLMM estimator. For empirical publication, use a proper random-intercept logistic model such as `lme4::glmer(y ~ (1 | stratum) + covariates, family = binomial)`.
 </details>
 
 <details>
-<summary><b>4. Làm sao để sinh lại hình (figures)?</b></summary>
+<summary><strong>4. How do I regenerate the figures?</strong></summary>
 
 ```r
 library(imaihda)
 library(ggplot2)
 
-# Chạy tất cả kịch bản
 grid <- scenario_grid()
-rows <- lapply(names(grid), function(nm) fit_scenario(nm, grid[[nm]]))
-results <- do.call(rbind, lapply(rows, as.data.frame))
+results <- do.call(rbind, lapply(names(grid), function(nm) {
+  as.data.frame(fit_scenario(nm, grid[[nm]]))
+}))
 
-# Vẽ VPC-PCV scatter
 ggplot(results, aes(vpc_null, pcv, label = scenario)) +
   geom_point(size = 3, color = "#21918c") +
   geom_text(hjust = -0.3, family = "serif") +
@@ -300,79 +309,31 @@ ggplot(results, aes(vpc_null, pcv, label = scenario)) +
 </details>
 
 <details>
-<summary><b>5. Tại sao PCV của scenario C trong Python là NaN còn trong R là 78%?</b></summary>
+<summary><strong>5. Why is PCV NaN in Python scenario C but 78% in R?</strong></summary>
 
-Trong Python, `σ²_null = 0` ở scenario C → `pcv(0, 0) = NaN`. Trong R, `σ²_null = 0.82` do khác biệt RNG → PCV tính được. **Cả hai đều hợp lệ.** Đây là ví dụ điển hình cho thấy kết quả VPC/PCV có thể dao động — và đó chính là điểm mà repo này muốn minh họa.
+In the Python run, scenario C yields $\sigma^2_{\text{null}} = 0$, so `pcv(0, 0) = NaN` by definition. In the R run, $\sigma^2_{\text{null}} = 0.82$ due to RNG differences, so PCV is computable. **Both are valid outcomes.** The discrepancy itself illustrates the point of this repository: VPC/PCV estimates can vary across stochastic realisations, and small between-stratum variance values should be interpreted cautiously.
 </details>
 
 <details>
-<summary><b>6. Tôi chỉ biết R, có cần Python không?</b></summary>
+<summary><strong>6. Do I need Python if I only work in R?</strong></summary>
 
-Không. R package `imaihda` là bản tái lập **hoàn chỉnh và độc lập**. Bạn có thể cài đặt, chạy toàn bộ pipeline, và sinh kết quả chỉ với R mà không cần Python.
+No. The R package `imaihda` is a **complete, self-contained reproduction**. You can install it, run the full pipeline, and produce all results using only R.
 </details>
 
 ---
 
-## Tài liệu tham khảo
+## References
 
-1. Evans CR, Williams DR, Onnela JP, Subramanian SV. A multilevel approach to modeling health inequalities at the intersection of multiple social identities. *SSM - Population Health*. 2018;6:149–157.
-2. O'Sullivan JL, Alonso-Perez E, et al. Onset of Type 2 diabetes in adults aged 50 and older in Europe: an intersectional multilevel analysis of individual heterogeneity and discriminatory accuracy. *Diabetology & Metabolic Syndrome*. 2024;16:293. doi:10.1186/s13098-024-01533-3.
-3. Elff M, Heisig JP, Schaeffer M, Shikano S. Multilevel analysis with few clusters. *British Journal of Political Science*. 2021;51:412–426.
-
----
-
-## Giấy phép
-
-MIT License — xem [LICENSE](LICENSE).
+1. Evans CR, Williams DR, Onnela J-P, Subramanian SV. A multilevel approach to modeling health inequalities at the intersection of multiple social identities. *SSM - Population Health*. 2018;6:149–157. doi:10.1016/j.ssmph.2018.08.005
+2. O'Sullivan JL, Alonso-Perez E, et al. Onset of Type 2 diabetes in adults aged 50 and older in Europe: an intersectional multilevel analysis of individual heterogeneity and discriminatory accuracy. *Diabetology & Metabolic Syndrome*. 2024;16:293. doi:10.1186/s13098-024-01533-3
+3. Elff M, Heisig JP, Schaeffer M, Shikano S. Multilevel analysis with few clusters: improving likelihood-based methods to provide unbiased estimates and accurate inference. *British Journal of Political Science*. 2021;51(1):412–426. doi:10.1017/S0007123419000097
 
 ---
 
-<a id="english"></a>
-##  English
+## License
 
-> [Tiếng Việt ở trên](#i-maihda-hic-mic-simulation-v31)
-
-### What is this?
-
-A synthetic-data stress-test workflow demonstrating that **VPC and PCV** — core I-MAIHDA metrics — are sensitive to outcome prevalence, sparse strata, and SES-patterned under-detection. A HIC-MIC difference in VPC/PCV does not necessarily indicate a different intersectional structure. Includes both **Python** (primary) and **R package `imaihda`** (full reproduction, installable).
-
-### Quick start (R)
-
-```r
-remotes::install_github("nguyenminh2301/-i-maihda", subdir = "imaihda")
-library(imaihda)
-
-df <- simulate_intersectional_data(n = 2000, seed = 42)
-res <- fit_imaihda(df)
-res$vpc_null  # VPC from null model (%)
-res$pcv       # PCV (%)
-```
-
-### Quick start (Python)
-
-```bash
-pip install -r requirements.txt
-python scripts/run_all.py
-# outputs: outputs/*.csv, figures/*.png
-```
-
-### Key finding
-
-> A MIC cohort showing higher VPC or lower PCV than a HIC cohort does **not** necessarily mean the intersectional structure of inequality is different. The observed difference may reflect prevalence, sparse strata, or differential detection — not structural inequality.
-
-### Cross-language validation
-
-Both Python (PCG64) and R (Mersenne Twister) implementations pass **all 6/6 methodological benchmarks** despite different RNG engines. Numerical values differ, statistical conclusions match.
-
-| Benchmark | Python | R |
-|-----------|:------:|:--:|
-| Additive-dominant detection | ✅ | ✅ |
-| Interaction ↑ VPC | ✅ | ✅ |
-| Interaction leaves residual | ✅ | ✅ |
-| Detection ↓ prevalence | ✅ | ✅ |
-| Detection masks VPC | ✅ | ✅ |
-| Sparse strata flagged | ✅ | ✅ |
+MIT — see [LICENSE](LICENSE).
 
 ---
 
-*Repository maintained by Minh Thien Nguyen. Last updated: June 2026.*
+*Maintained by Minh Thien Nguyen. Last updated: June 2026.*
