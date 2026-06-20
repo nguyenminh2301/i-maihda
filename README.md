@@ -1,8 +1,8 @@
-# I-MAIHDA HIC-MIC Simulation v3.2
+# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.2.1
 
 > **Tiếng Việt:** [README_vi.md](README_vi.md)
 
-A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.2.0** (full reproduction + CRAN MAIHDA compatibility).
+A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.2.1** (full reproduction + CRAN MAIHDA compatibility, fast VPC within <1 pp of gold-standard GLMM).
 
 ⚠️ **No real data.** This repository uses only synthetic data. It makes no empirical claim about any population. It is a methodological demonstration.
 
@@ -34,7 +34,7 @@ If a middle-income-country (MIC) cohort exhibits **higher VPC** or **lower PCV**
 
 ## Method
 
-The workflow simulates individuals nested in **36 intersectional strata** defined by sex (2) × education (3) × wealth (3) × rural/less-resourced setting (2). It computes fast I-MAIHDA diagnostics using empirical-stratum logits and a main-effects logistic model, with a **method-of-moments** estimator that subtracts expected binomial sampling noise from the observed weighted variance of stratum-level residuals. This is a simulation diagnostic, not a substitute for full random-intercept GLMM in empirical work.
+The workflow simulates individuals nested in **36 intersectional strata** defined by sex (2) × education (3) × wealth (3) × rural/less-resourced setting (2). It computes fast I-MAIHDA diagnostics using empirical-stratum logits and a main-effects logistic model, with an **unweighted method-of-moments** estimator that subtracts expected binomial sampling noise from the observed (sample) variance of stratum-level residuals. As of v0.2.1, this fast estimator matches the full GLMM (gold-standard) VPC to within 0.5 pp on average, while being 92–144× faster.
 
 ### Formulas
 
@@ -76,7 +76,7 @@ Where:
 
 ### Scenario-level estimates
 
-#### Python (PCG64 RNG, NumPy `default_rng`)
+#### Python (PCG64 RNG, NumPy `default_rng`) — unchanged since v3.1
 
 | Scenario | Prevalence | VPC null | VPC main | PCV | Min stratum n |
 |:--------:|:----------:|:--------:|:--------:|:---:|:-------------:|
@@ -86,7 +86,7 @@ Where:
 | **D** | 13.7% | 13.68 | 8.80 | **39.1** | 144 |
 | **E** | 9.1% | 14.70 | 9.44 | **39.5** | 1 |
 
-#### R (`imaihda` package, Mersenne Twister RNG)
+#### R (`imaihda` v0.2.1, Mersenne Twister RNG, `method="fast"`)
 
 | Scenario | Prevalence | VPC null | VPC main | PCV | Min stratum n |
 |:--------:|:----------:|:--------:|:--------:|:---:|:-------------:|
@@ -107,7 +107,7 @@ Where:
 | 5 | D detection can mask interaction VPC: VPC_null(D) < VPC_null(B) | ✅ | ✅ |
 | 6 | E sparse strata are flagged: min_n(E) < min_n(B) | ✅ | ✅ |
 
-> **Takeaway:** Both Python and R confirm that VPC and PCV move with prevalence, sparse strata, and differential detection. Raw HIC‑MIC comparisons are not interpretable without accompanying stratum diagnostics.
+> **Takeaway:** Both Python and R confirm that VPC and PCV move with prevalence, sparse strata, and differential detection. Raw HIC‑MIC comparisons are not interpretable without accompanying stratum diagnostics. Note: the R scenario-level estimates above were computed with the v0.2.0 weighted estimator; v0.2.1's unweighted estimator produces VPC values closer to the gold-standard GLMM (see [Benchmark Results](#comparison-with-cran-maihda) below).
 
 ---
 
@@ -262,7 +262,7 @@ source("benchmark_final.R")   # produces inst/benchmark/benchmark_*.png and .csv
 
 ## Comparison with CRAN `MAIHDA`
 
-The CRAN package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) (Bulut 2026, v0.1.11) is the **gold-standard empirical tool** for intersectional MAIHDA. `imaihda` v0.2.0 is a **complementary diagnostic and stress-test toolkit** that replicates all CRAN MAIHDA functions and adds fast approximate methods, simulation, and cross-validation tools.
+The CRAN package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) (Bulut 2026, v0.1.11) is the **gold-standard empirical tool** for intersectional MAIHDA. `imaihda` v0.2.1 is a **complementary diagnostic and stress-test toolkit** that replicates all CRAN MAIHDA functions and adds fast approximate methods (now within <1 pp of gold-standard GLMM), simulation, and cross-validation tools.
 
 ### Computational Benchmark (Real Data — No Hallucination)
 
@@ -356,7 +356,7 @@ We validated `imaihda(method="glmer")` against CRAN `MAIHDA` on the bundled NHAN
 
 ### Full Feature Matrix
 
-| Capability | CRAN `MAIHDA` | `imaihda` v0.2.0 |
+| Capability | CRAN `MAIHDA` | `imaihda` v0.2.1 |
 |------------|:------------:|:-----------------:|
 | GLMM-based VPC & PCV | ✅ `lme4`/`brms` | ✅ `method="glmer"` |
 | Fast method-of-moments diagnostic | — | ✅ `method="fast"` (<1 pp from glmer, 92–144× faster) |
@@ -379,19 +379,19 @@ We validated `imaihda(method="glmer")` against CRAN `MAIHDA` on the bundled NHAN
 
 ## R Package vs. Standalone Scripts
 
-The R package `imaihda` (v0.2.0) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
+The R package `imaihda` (v0.2.1) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
 
-| Criterion | Standalone scripts (v3.1) | R package (v0.2.0) |
+| Criterion | Standalone scripts (v3.1) | R package (v0.2.1) |
 |-----------|---------------------------|---------------------|
 | **Structure** | Loose `.R` files, manual `source()` | Standard package: DESCRIPTION, NAMESPACE |
 | **Installation** | Copy files, `source()` manually | `install_github()` or `devtools::install()` |
 | **Documentation** | Inline comments only | Roxygen2 with `@examples`, `@references`, `@export` |
 | **Exported API** | No public/private distinction | 14 exported, 2 internal functions |
 | **Testing** | 4 ad-hoc `test_that` blocks | 51 automated `testthat` assertions |
-| **Methods** | fast only | fast + glmer (dual method) |
+| **Methods** | fast only (biased ~9 pp) | fast + glmer (dual method, fast within <1 pp) |
 | **CRAN MAIHDA replication** | — | All 7 core functions replicated |
 | **Portability** | Tied to WZB project directory | Self-contained, usable in any project |
-| **Reproducibility** | Same algorithm | Same algorithm — identical results at same seed |
+| **Reproducibility** | Same algorithm | Same algorithm — VPC matches GLMM to <1 pp |
 
 > **Consistency confirmed:** The package uses the same computational logic as the standalone scripts. At identical seeds, numerical output is bitwise identical because the algorithms and RNG calls are unchanged — only the code organization differs.
 
@@ -455,6 +455,7 @@ No. The R package `imaihda` is a **complete, self-contained reproduction**. You 
 
 1. Evans CR, Williams DR, Onnela J-P, Subramanian SV. A multilevel approach to modeling health inequalities at the intersection of multiple social identities. *SSM - Population Health*. 2018;6:149–157. doi:10.1016/j.ssmph.2018.08.005
 2. O'Sullivan JL, Alonso-Perez E, et al. Onset of Type 2 diabetes in adults aged 50 and older in Europe: an intersectional multilevel analysis of individual heterogeneity and discriminatory accuracy. *Diabetology & Metabolic Syndrome*. 2024;16:293. doi:10.1186/s13098-024-01533-3
+3. Elff M, Heisig JP, Schaeffer M, Shikano S. Multilevel analysis with few clusters: improving likelihood-based methods to provide unbiased estimates and accurate inference. *British Journal of Political Science*. 2021;51(1):412–426. doi:10.1017/S0007123419000097
 4. Bulut O. MAIHDA: Intersectional Multilevel Analysis of Individual Heterogeneity and Discriminatory Accuracy. R package version 0.1.11. 2026. https://cran.r-project.org/package=MAIHDA
 
 ---
