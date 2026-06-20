@@ -1,0 +1,7 @@
+"check","passed","value","criterion"
+"A_additive_is_additive_dominant",TRUE,"PCV=100.0; VPC_main=0.00","PCV >= 80 and VPC_main < 1"
+"B_interaction_increases_vpc",TRUE,"A=4.50; B=17.20","B VPC_null > A VPC_null + 5 percentage points"
+"B_interaction_leaves_residual_variance",TRUE,"PCV=51.7","PCV < 70"
+"C_detection_reduces_observed_prevalence",TRUE,"A=23.6%; C=11.6%","C observed prevalence < A observed prevalence"
+"D_detection_can_mask_interaction_vpc",TRUE,"B=17.20; D=16.06","D VPC_null < B VPC_null despite same residual-interaction SD"
+"E_sparse_strata_are_flagged",TRUE,"B min_n=130; E min_n=2","E minimum stratum size < B minimum stratum size"

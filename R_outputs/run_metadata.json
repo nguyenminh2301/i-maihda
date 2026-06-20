@@ -1,0 +1,7 @@
+{
+  "started_utc": "2026-06-20T13:58:17+0700",
+  "finished_utc": "2026-06-20T13:58:29+0700",
+  "r_version": "R version 4.3.3 (2024-02-29 ucrt)",
+  "platform": "x86_64-w64-mingw32",
+  "all_benchmarks_passed": true
+}

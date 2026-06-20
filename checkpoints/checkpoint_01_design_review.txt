@@ -1,0 +1,1 @@
+Design review completed. Main correction: project must be framed as structured HIC-MIC comparison, not welfare-state causal identification.

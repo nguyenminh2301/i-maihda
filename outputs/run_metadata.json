@@ -1,0 +1,9 @@
+{
+  "started_utc": "2026-06-20T00:10:42.530650+00:00",
+  "finished_utc": "2026-06-20T00:10:45.063135+00:00",
+  "python": "3.13.6",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "numpy": "2.3.2",
+  "pandas": "2.3.1",
+  "all_benchmarks_passed": true
+}

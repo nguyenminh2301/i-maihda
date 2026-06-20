@@ -1,0 +1,16 @@
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
+.DS_Store
+
+# R temporary files
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+.Rproj.user/
+
+# Run checkpoints (generated per-run)
+R_checkpoint_*.txt
+checkpoints/checkpoint_03_final_run.txt
