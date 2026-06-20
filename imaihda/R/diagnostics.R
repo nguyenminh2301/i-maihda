@@ -23,29 +23,30 @@ weighted_variance <- function(x, w) {
 #'
 #' Estimates the true between-stratum variance on the logit scale by
 #' subtracting the expected binomial sampling noise from the observed
-#' weighted variance of stratum-level residuals. This is a fast
-#' synthetic-data diagnostic, not a replacement for full GLMM estimation.
+#' variance of stratum-level residuals. Uses unweighted (sample) variance
+#' rather than precision-weighted variance, because precision weights
+#' downweight extreme strata that carry the most between-stratum signal.
 #'
 #' The estimator:
-#' \deqn{\hat{\sigma}^2_{stratum} = \max(0,\; \mathrm{Var}_w(\mathrm{residual})
-#'       - \mathbb{E}_w[\mathrm{Var}(\mathrm{logit}_j)])}
+#' \deqn{\hat{\sigma}^2_{stratum} = \max(0,\; \mathrm{Var}(\mathrm{residual})
+#'       - \overline{\mathrm{Var}(\mathrm{logit}_j)})}
 #'
-#' where \eqn{\mathrm{Var}_w} is the precision-weighted variance and
-#' \eqn{\mathbb{E}_w} is the precision-weighted mean of stratum-level
-#' delta-method sampling variances.
+#' where \eqn{\mathrm{Var}} is the standard (unweighted) sample variance and
+#' \eqn{\overline{\mathrm{Var}(\mathrm{logit}_j)}} is the arithmetic mean of
+#' stratum-level delta-method sampling variances.
 #'
 #' @param logit_vec Numeric vector. Empirical logits for each stratum.
 #' @param pred_vec Numeric vector. Model-predicted logits for each stratum.
 #' @param sampling_var Numeric vector. Delta-method sampling variance
 #'   of each empirical logit.
-#' @param weights Numeric vector. Precision weights (1 / sampling_var).
+#' @param weights Numeric vector. Kept for backward compatibility; not used.
 #'
 #' @return Non-negative numeric scalar: estimated between-stratum variance.
 #'
 #' @keywords internal
-between_stratum_variance <- function(logit_vec, pred_vec, sampling_var, weights) {
+between_stratum_variance <- function(logit_vec, pred_vec, sampling_var, weights = NULL) {
   residual     <- logit_vec - pred_vec
-  raw_var      <- weighted_variance(residual, weights)
-  expected_noise <- weighted.mean(sampling_var, weights)
+  raw_var      <- stats::var(residual)            # unweighted, (n-1) divisor
+  expected_noise <- mean(sampling_var)             # arithmetic mean
   max(raw_var - expected_noise, 0)
 }

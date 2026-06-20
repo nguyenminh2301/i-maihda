@@ -93,13 +93,12 @@ fit_imaihda_fast <- function(df) {
   strata <- aggregate_strata(df)
   logit_v <- strata$empirical_logit
   sampling_var <- strata$logit_sampling_var
-  weights <- strata$precision_weight
 
   # Null model: overall logit
   p_overall <- mean(df$y)
   p_overall <- min(max(p_overall, 1e-6), 1 - 1e-6)
   null_pred <- rep(log(p_overall / (1 - p_overall)), nrow(strata))
-  var0 <- between_stratum_variance(logit_v, null_pred, sampling_var, weights)
+  var0 <- between_stratum_variance(logit_v, null_pred, sampling_var)
 
   # Main-effects additive GLM
   main <- stats::glm(
@@ -108,7 +107,7 @@ fit_imaihda_fast <- function(df) {
     family  = stats::binomial()
   )
   main_pred <- stats::predict(main, newdata = strata, type = "link")
-  var1 <- between_stratum_variance(logit_v, main_pred, sampling_var, weights)
+  var1 <- between_stratum_variance(logit_v, main_pred, sampling_var)
 
   diag <- stratum_diagnostics(df, strata)
   c(
