@@ -137,10 +137,6 @@ Trong đó:
 
 ### 4. Hình minh họa các hàm
 
-**`plot_vpc()`** — Biểu đồ cột VPC dùng một lệnh:
-
-![plot_vpc example](figures/plot_vpc_example.png)
-
 **`plot_strata()`** — Biểu đồ caterpillar hiệu ứng ngẫu nhiên từng strata với CI 95%:
 
 ![plot_strata example](figures/plot_strata_example.png)

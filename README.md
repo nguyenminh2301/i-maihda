@@ -137,10 +137,6 @@ Where:
 
 ### 4. Function visualizations
 
-**`plot_vpc()`** — Single-call VPC bar chart:
-
-![plot_vpc example](figures/plot_vpc_example.png)
-
 **`plot_strata()`** — Caterpillar plot of stratum random effects with 95% CIs:
 
 ![plot_strata example](figures/plot_strata_example.png)

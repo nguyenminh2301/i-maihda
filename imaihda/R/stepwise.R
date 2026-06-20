@@ -52,12 +52,10 @@ stepwise_pcv <- function(data, outcome, vars, stratum = "stratum",
   # Step 0: null model (stratum only)
   if (!quiet) cat("Step 0: Null model (", stratum, " only)\n", sep = "")
 
+  # Pre-aggregate strata with actual covariate values for prediction
+  strata_agg <- aggregate_strata(data)
+
   if (method == "fast") {
-    # Compute null between-stratum variance directly (overall logit)
-    strata_agg <- aggregate_strata(
-      data.frame(stratum = data[[stratum]], sex = 0, education = 0,
-                 wealth = 0, rural = 0, y = data[[outcome]])
-    )
     p_overall <- mean(data[[outcome]])
     p_overall <- min(max(p_overall, 1e-6), 1 - 1e-6)
     null_pred <- rep(log(p_overall / (1 - p_overall)), nrow(strata_agg))
@@ -94,15 +92,10 @@ stepwise_pcv <- function(data, outcome, vars, stratum = "stratum",
       )
       df_step <- data
       df_step$y <- data[[outcome]]
-      df_step$stratum <- as.factor(df_step[[stratum]])
       main_glm <- stats::glm(
         stats::as.formula(formula_str),
         data = df_step,
         family = stats::binomial()
-      )
-      strata_agg <- aggregate_strata(
-        data.frame(stratum = data[[stratum]], sex = 0, education = 0,
-                   wealth = 0, rural = 0, y = data[[outcome]])
       )
       main_pred <- stats::predict(main_glm, newdata = strata_agg, type = "link")
       vari <- between_stratum_variance(
