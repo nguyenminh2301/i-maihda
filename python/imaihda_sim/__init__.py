@@ -6,3 +6,4 @@ from .detection import (
     vpc_detection_bounds,
     detection_tipping_point,
 )
+from .uncertainty import sparse_strata_vpc
