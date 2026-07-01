@@ -7,3 +7,8 @@ from .detection import (
     detection_tipping_point,
 )
 from .uncertainty import sparse_strata_vpc
+from .robustness import (
+    simulate_severity_dependent_detection,
+    simulate_structured_random_effects,
+    misspecified_score,
+)

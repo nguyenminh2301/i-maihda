@@ -1,0 +1,5 @@
+arm,mean_vpc_true,bias,rmse,noninferior_vs_naive
+naive,20.15,-10.3,12.28,True
+detection_only,20.15,-0.75,1.95,True
+sparse_only,20.15,-3.74,9.21,True
+both,20.15,8.79,11.67,True

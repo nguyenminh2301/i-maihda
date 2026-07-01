@@ -627,6 +627,12 @@ Trong lần chạy Python, kịch bản C cho ra $\sigma^2_{\text{null}} = 0$, d
 Không. R package `imaihda` là bản tái lập **hoàn chỉnh và độc lập**. Bạn có thể cài đặt, chạy toàn bộ quy trình, và tạo mọi kết quả chỉ với R.
 </details>
 
+<details>
+<summary><strong>7. Điều gì xảy ra nếu giả định của detection-bias hoặc sparse-strata correction bị sai?</strong></summary>
+
+Xem [`docs/METHODS_NOTE_ROBUSTNESS.md`](docs/METHODS_NOTE_ROBUSTNESS.md) — một simulation study đầy đủ cho cả hai correction dưới các giả định bị vi phạm (sai covariate detection, detection phụ thuộc outcome, random effects không Gaussian, prevalence hiếm/cực đoan, và detection bias xảy ra đồng thời với sparsity), kèm tiêu chí thành công/vỡ chính xác và kết quả từ code đã thực sự chạy.
+</details>
+
 ---
 
 ## Tài liệu tham khảo

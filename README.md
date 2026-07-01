@@ -578,6 +578,12 @@ In the Python run, scenario C yields $\sigma^2_{\text{null}} = 0$, so `pcv(0, 0)
 No. The R package `imaihda` is a **complete, self-contained reproduction**. You can install it, run the full pipeline, and produce all results using only R.
 </details>
 
+<details>
+<summary><strong>7. What happens if the detection-bias or sparse-strata correction's assumptions are wrong?</strong></summary>
+
+See [`docs/METHODS_NOTE_ROBUSTNESS.md`](docs/METHODS_NOTE_ROBUSTNESS.md) — a full simulation study of both corrections under violated assumptions (misspecified detection covariates, outcome-dependent detection, non-Gaussian random effects, rare/extreme prevalence, and detection bias co-occurring with sparsity), with precise success/breakdown criteria and results from code that was actually executed.
+</details>
+
 ---
 
 ## References
