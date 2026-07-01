@@ -1,8 +1,8 @@
-# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.2.2
+# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.3.0
 
 > **English:** [README.md](README.md)
 
-Quy trình mô phỏng dữ liệu tổng hợp kiểm định độ nhạy của **VPC** và **PCV** — hai chỉ số thống kê tóm tắt cốt lõi của I-MAIHDA — trước tác động của tỉ lệ hiện mắc, strata thưa, và sai số phát hiện có khuôn mẫu SES. Repository gồm bản **Python** (chính) và **R package `imaihda` v0.2.2** (tái lập hoàn chỉnh, VPC phương pháp nhanh lệch <1 điểm phần trăm so với GLMM chuẩn vàng, tương thích CRAN MAIHDA).
+Quy trình mô phỏng dữ liệu tổng hợp kiểm định độ nhạy của **VPC** và **PCV** — hai chỉ số thống kê tóm tắt cốt lõi của I-MAIHDA — trước tác động của tỉ lệ hiện mắc, strata thưa, và sai số phát hiện có khuôn mẫu SES. Repository gồm bản **Python** (chính) và **R package `imaihda` v0.3.0** (tái lập hoàn chỉnh, VPC phương pháp nhanh lệch <1 điểm phần trăm so với GLMM chuẩn vàng, tương thích CRAN MAIHDA).
 
 ⚠️ **Không dùng dữ liệu thật.** Repository này chỉ sử dụng dữ liệu tổng hợp. Không có tuyên bố thực nghiệm nào về bất kỳ quần thể nào. Đây là minh chứng phương pháp luận.
 
@@ -153,7 +153,7 @@ Trong đó:
 
 ## R package `imaihda`
 
-Package R có thể cài đặt, có tài liệu đầy đủ, chứa toàn bộ quy trình mô phỏng và chẩn đoán. **14 hàm được xuất (export)**, 51 assertions testthat. Hỗ trợ cả `method="fast"` (method-of-moments, lệch <1 điểm phần trăm, nhanh hơn ~100 lần) và `method="glmer"` (GLMM đầy đủ qua lme4) xuyên suốt tất cả hàm.
+Package R có thể cài đặt, có tài liệu đầy đủ, chứa toàn bộ quy trình mô phỏng và chẩn đoán. **18 hàm được xuất (export)**, 67 assertions testthat. Hỗ trợ cả `method="fast"` (method-of-moments, lệch <1 điểm phần trăm, nhanh hơn ~100 lần) và `method="glmer"` (GLMM đầy đủ qua lme4) xuyên suốt tất cả hàm.
 
 ### Cài đặt
 
@@ -295,7 +295,7 @@ print(benchmarks)  # 6 dòng pass/fail
 #### Chạy kiểm định
 
 ```r
-devtools::test("imaihda")   # 51 testthat assertions
+devtools::test("imaihda")   # 67 testthat assertions
 ```
 
 #### Script benchmark
@@ -340,7 +340,7 @@ source("benchmark_final.R")   # sinh ra imaihda/inst/benchmark/benchmark_*.png v
 
 Package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) trên CRAN (Bulut 2026, v0.1.11, 25 hàm xuất) là công cụ thực nghiệm đã được thiết lập cho MAIHDA giao thoa. Package hỗ trợ ba engine mô hình hoá (`lme4`, `brms` cho suy luận Bayes, `WeMix` cho trọng số khảo sát), ba kiểu phân rã (two-model chuẩn, crossed-dimensions, longitudinal/growth-curve), khoảng tin cậy bootstrap, bảng điều khiển Shiny tương tác, và năm bộ dữ liệu đi kèm.
 
-`imaihda` v0.2.2 (14 hàm xuất) tiếp cận theo hướng khác: đây là bộ công cụ mô phỏng và stress-test. Package bổ sung bộ ước lượng method-of-moments nhanh (xấp xỉ kết quả GLMM trong thời gian ngắn hơn nhiều), sinh dữ liệu tổng hợp với sai số phát hiện tùy chỉnh, các kịch bản benchmark dựng sẵn, và đối chứng song ngữ với bản Python. Package không cố gắng sánh ngang phạm vi lựa chọn mô hình hoá của CRAN MAIHDA.
+`imaihda` v0.3.0 (18 hàm xuất) tiếp cận theo hướng khác: đây là bộ công cụ mô phỏng và stress-test. Package bổ sung bộ ước lượng method-of-moments nhanh (xấp xỉ kết quả GLMM trong thời gian ngắn hơn nhiều), sinh dữ liệu tổng hợp với sai số phát hiện tùy chỉnh, các kịch bản benchmark dựng sẵn, và đối chứng song ngữ với bản Python. Package không cố gắng sánh ngang phạm vi lựa chọn mô hình hoá của CRAN MAIHDA.
 
 ### Benchmark tính toán
 
@@ -415,7 +415,7 @@ Chúng tôi đã kiểm định `imaihda(method="glmer")` với CRAN `MAIHDA` tr
 | VPC (null) | 0,0636 | 0,0636 | ✅ 1e-6 |
 | PCV | 0,826 | 0,826 | ✅ 1e-4 |
 
-> 51 assertions testthat (gồm 12 test đối chứng chéo) xác nhận sự tương đương về số học.
+> 67 assertions testthat (gồm 12 test đối chứng chéo) xác nhận sự tương đương về số học.
 
 ### Khi nào dùng package nào
 
@@ -482,20 +482,57 @@ Toàn bộ 25 hàm xuất của CRAN MAIHDA và tương đương trong imaihda (
 | `plot_sweep()` | Trực quan hóa quét sai số phát hiện |
 | `compare_packages()` | Đối chiếu tự động imaihda vs CRAN MAIHDA |
 | `fit_imaihda(method="fast")` | Bộ ước lượng method-of-moments (nhanh hơn ~100×, lệch <1 pp) |
+| `correct_detection_bias()` | **Hiệu chỉnh VPC/PCV cho under-detection theo SES** — không có trong CRAN MAIHDA |
+| `vpc_detection_bounds()` | **Khoảng độ nhạy của VPC thật** qua các mức detection — không có trong CRAN MAIHDA |
+| `detection_tipping_point()` | **Analogue E-value**: mức under-detection tối thiểu đảo ngược kết luận VPC — không có trong CRAN MAIHDA |
+
+## Phân tích độ nhạy sai số phát hiện (Detection-Bias Sensitivity Analysis)
+
+Mọi nghiên cứu I-MAIHDA đã công bố — kể cả ở những bối cảnh dễ under-detection nhất (cohort LMIC/MIC, khảo sát khu định cư phi chính thức) — đều báo cáo VPC/PCV *thô*, ngầm giả định outcome được đo đồng đều giữa mọi strata. CRAN `MAIHDA` mở rộng *bề rộng mô hình* (Bayesian, survey weights, longitudinal) nhưng **không có công cụ nào cho measurement error của outcome**. Đây chính là chỗ hai chỉ số cốt lõi của I-MAIHDA dễ sai lệch nhất, và `imaihda` lấp vào khoảng trống đó.
+
+### Vấn đề
+
+Outcome quan sát là `y = y_true × detected`. Detection chỉ loại bỏ true-positive, nên trong mỗi stratum prevalence quan sát bị giảm theo xác suất detection `d`:
+
+$$E[p_{\text{obs}}] = p_{\text{true}} \times d(\delta) \quad\Longrightarrow\quad p_{\text{true}} = \frac{p_{\text{obs}}}{d(\delta)}$$
+
+Analyst không biết cường độ detection `δ`, nên `δ` trở thành **tham số độ nhạy** được quét qua một dải khả dĩ. Detection được tính *tương đối* so với stratum thuận lợi nhất, nên `δ = 0` không hiệu chỉnh và trả về đúng VPC/PCV quan sát. Chỉ phần *differential* theo khuôn mẫu SES là nhận dạng được từ dữ liệu quan sát; mức under-ascertainment đồng đều thì không, và được để lại như một giả định tường minh.
+
+### Cách dùng
+
+```r
+library(imaihda)
+df <- simulate_intersectional_data(n = 12000, interaction_sd = 0.9,
+                                   detection_strength = 0.8, seed = 7)
+
+correct_detection_bias(df, delta = 0.0)$vpc_null   # VPC quan sát (mốc neo)
+correct_detection_bias(df, delta = 0.8)$vpc_null   # VPC đã hiệu chỉnh
+
+bounds <- vpc_detection_bounds(df, delta_max = 1.2) # mỗi dòng một delta
+detection_tipping_point(df, threshold = 15)         # delta tối thiểu để VPC = 15%
+```
+
+### Tự kiểm chứng (recovery test)
+
+Vì simulator sinh cả outcome quan sát `y` lẫn outcome thật `y_true`, phương pháp có thể được kiểm chứng với ground truth. Với cường độ sinh thật `δ = 0.8`, sai số phát hiện che lấp phương sai giữa-stratum nên **VPC quan sát (11.7%) thấp hơn VPC thật (15.9%)**. Hiệu chỉnh tại `δ` thật khôi phục **15.7%** (lệch ~0.5 pp), và khoảng quét bao trọn giá trị thật:
+
+![Khoảng độ nhạy sai số phát hiện](figures/detection_bounds.png)
+
+Đường hiệu chỉnh cắt đường VPC-thật quanh `δ = 0.8`, đúng cường độ đã dùng để sinh dữ liệu. Recovery được assert tự động trong `python/tests/test_detection_correction.py` và `imaihda/tests/testthat/test-detection-correction.R`.
 
 ---
 
 ## R package so với script độc lập
 
-R package `imaihda` (v0.2.2) thay thế các script R độc lập trước đây (`R/*.R`, v3.1).
+R package `imaihda` (v0.3.0) thay thế các script R độc lập trước đây (`R/*.R`, v3.1).
 
-| Tiêu chí | Script độc lập (v3.1) | R package (v0.2.2) |
+| Tiêu chí | Script độc lập (v3.1) | R package (v0.3.0) |
 |----------|------------------------|---------------------|
 | **Cấu trúc** | File `.R` rời, `source()` thủ công | Package chuẩn: DESCRIPTION, NAMESPACE |
 | **Cài đặt** | Sao chép file, `source()` thủ công | `install_github()` hoặc `devtools::install()` |
 | **Tài liệu** | Chỉ có comment nội bộ | Roxygen2 với `@examples`, `@references`, `@export` |
-| **API xuất ra** | Không phân biệt public/private | 14 hàm xuất, 2 hàm nội bộ |
-| **Kiểm định** | 4 khối `test_that` tạm | 51 assertions `testthat` tự động |
+| **API xuất ra** | Không phân biệt public/private | 18 hàm xuất, 2 hàm nội bộ |
+| **Kiểm định** | 4 khối `test_that` tạm | 67 assertions `testthat` tự động |
 | **Phương pháp** | Chỉ fast (lệch ~9 pp) | fast + glmer (fast lệch <1 pp) |
 | **Tái tạo CRAN MAIHDA** | — | Toàn bộ 7 hàm lõi được tái tạo |
 | **Tính khả chuyển** | Gắn với thư mục dự án WZB | Độc lập, dùng được ở mọi dự án |
@@ -574,6 +611,6 @@ MIT — xem [LICENSE](LICENSE).
 
 ---
 
-*Bảo trì bởi Minh Thien Nguyen. Cập nhật lần cuối: tháng 6 năm 2026 (v0.2.2).*
+*Bảo trì bởi Minh Thien Nguyen. Cập nhật lần cuối: tháng 6 năm 2026 (v0.3.0).*
 
 

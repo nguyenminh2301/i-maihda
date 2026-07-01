@@ -1,8 +1,8 @@
-# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.2.2
+# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.3.0
 
 > **Tiếng Việt:** [README_vi.md](README_vi.md)
 
-A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.2.2** (full reproduction, cross-validated against CRAN MAIHDA, fast estimator within <1 pp of GLMM).
+A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.3.0** (full reproduction, cross-validated against CRAN MAIHDA, fast estimator within <1 pp of GLMM).
 
 ⚠️ **No real data.** This repository uses only synthetic data. It makes no empirical claim about any population. It is a methodological demonstration.
 
@@ -153,7 +153,7 @@ Where:
 
 ## R Package `imaihda`
 
-An installable, documented R package containing the full simulation and diagnostic pipeline. **14 functions exported**, 51 testthat assertions. Both `method="fast"` (method-of-moments, <1 pp accuracy, ~100× speedup) and `method="glmer"` (full GLMM via lme4) are supported throughout.
+An installable, documented R package containing the full simulation and diagnostic pipeline. **18 functions exported**, 67 testthat assertions. Both `method="fast"` (method-of-moments, <1 pp accuracy, ~100× speedup) and `method="glmer"` (full GLMM via lme4) are supported throughout.
 
 ### Installation
 
@@ -243,7 +243,7 @@ print(benchmarks)  # 6 pass/fail rows
 #### Running tests
 
 ```r
-devtools::test("imaihda")   # 51 testthat assertions
+devtools::test("imaihda")   # 67 testthat assertions
 ```
 
 #### Benchmark scripts
@@ -288,7 +288,7 @@ source("benchmark_final.R")   # produces imaihda/inst/benchmark/benchmark_*.png 
 
 The CRAN package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) (Bulut 2026, v0.1.11, 25 exported functions) is the established empirical tool for intersectional MAIHDA. It supports three modelling engines (`lme4`, `brms` for Bayesian, `WeMix` for survey weights), three decomposition types (standard two-model, crossed-dimensions, longitudinal/growth-curve), bootstrap confidence intervals, an interactive Shiny dashboard, and five bundled datasets.
 
-`imaihda` v0.2.2 (14 exported functions) takes a different approach: it is a simulation and stress-test toolkit. It adds a fast method-of-moments estimator that approximates the GLMM result in a fraction of the time, synthetic data generation with configurable detection bias, pre-built benchmark scenarios, and cross-language validation against a Python implementation. It does not attempt to match CRAN MAIHDA's breadth of modelling options.
+`imaihda` v0.3.0 (18 exported functions) takes a different approach: it is a simulation and stress-test toolkit. It adds a fast method-of-moments estimator that approximates the GLMM result in a fraction of the time, synthetic data generation with configurable detection bias, pre-built benchmark scenarios, and cross-language validation against a Python implementation. It does not attempt to match CRAN MAIHDA's breadth of modelling options.
 
 ### Computational Benchmark
 
@@ -363,7 +363,7 @@ Across 3 seeds, the average absolute difference between fast and glmer is under 
 | VPC (null) | 0.0636 | 0.0636 | ✅ 1e-6 |
 | PCV | 0.826 | 0.826 | ✅ 1e-4 |
 
-51 testthat assertions, including 12 cross-validation tests, confirm equivalence.
+67 testthat assertions, including 12 cross-validation tests, confirm equivalence.
 
 ### When to Use Which
 
@@ -430,17 +430,59 @@ All 25 exported CRAN MAIHDA functions and their imaihda equivalents (or lack the
 | `plot_sweep()` | Detection-bias sweep visualization |
 | `compare_packages()` | Automated imaihda vs CRAN MAIHDA side-by-side |
 | `fit_imaihda(method="fast")` | Method-of-moments estimator (~100× faster, <1 pp bias) |
+| `correct_detection_bias()` | **Corrects VPC/PCV for SES-patterned under-detection** — not in CRAN MAIHDA |
+| `vpc_detection_bounds()` | **Sensitivity bounds on the true VPC** across detection strengths — not in CRAN MAIHDA |
+| `detection_tipping_point()` | **E-value analogue**: minimum under-detection that overturns a VPC conclusion — not in CRAN MAIHDA |
+
+## Detection-Bias Sensitivity Analysis
+
+Every published I-MAIHDA study — including those in settings where under-detection is most likely (LMIC/MIC cohorts, informal-settlement surveys) — reports VPC and PCV *at face value*, assuming the outcome is measured equally well across all strata. CRAN `MAIHDA` extends modelling breadth (Bayesian, survey weights, longitudinal) but offers **no tool for outcome measurement error**. This is the one place where I-MAIHDA's core summary statistics are most fragile, and `imaihda` fills it.
+
+### The problem
+
+The observed outcome is `y = y_true × detected`. Detection removes only true positives, so within a stratum the observed prevalence deflates by the stratum detection probability `d`:
+
+$$E[p_{\text{obs}}] = p_{\text{true}} \times d(\delta) \quad\Longrightarrow\quad p_{\text{true}} = \frac{p_{\text{obs}}}{d(\delta)}$$
+
+The analyst does not know the detection strength `δ`, so it becomes a **sensitivity parameter** swept over a plausible range. Detection is taken *relative* to the most-advantaged stratum, so `δ = 0` applies no correction and returns exactly the observed VPC/PCV. Only the SES-*patterned* differential is identifiable from observed data; a uniform ascertainment level is not, and is left as an explicit assumption.
+
+### Usage
+
+```r
+library(imaihda)
+df <- simulate_intersectional_data(n = 12000, interaction_sd = 0.9,
+                                   detection_strength = 0.8, seed = 7)
+
+correct_detection_bias(df, delta = 0.0)$vpc_null   # observed VPC (anchor)
+correct_detection_bias(df, delta = 0.8)$vpc_null   # corrected VPC
+
+bounds <- vpc_detection_bounds(df, delta_max = 1.2) # one row per delta
+detection_tipping_point(df, threshold = 15)         # min delta to reach VPC = 15%
+```
+
+```python
+from imaihda_sim import (simulate_intersectional_data, correct_detection_bias,
+                         vpc_detection_bounds, detection_tipping_point)
+```
+
+### Self-validation (recovery test)
+
+Because the simulator generates both the observed outcome `y` and the true outcome `y_true`, the method can be validated against ground truth. With a true generating strength `δ = 0.8`, detection bias masks the between-stratum variance so the **observed VPC (11.7%) understates the true VPC (15.9%)**. Correcting at the true `δ` recovers **15.7%** (within ~0.5 pp), and the swept bounds bracket the truth:
+
+![Detection-bias bounds](figures/detection_bounds.png)
+
+The corrected curve crosses the true-VPC line near `δ = 0.8`, exactly the strength used to generate the data. Recovery is asserted automatically in `python/tests/test_detection_correction.py` and `imaihda/tests/testthat/test-detection-correction.R`.
 
 ## R Package vs. Standalone Scripts
 
-The R package `imaihda` (v0.2.2) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
+The R package `imaihda` (v0.3.0) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
 
-| Criterion | Standalone scripts (v3.1) | R package (v0.2.2) |
+| Criterion | Standalone scripts (v3.1) | R package (v0.3.0) |
 |-----------|---------------------------|---------------------|
 | **Structure** | Loose `.R` files, manual `source()` | Standard package: DESCRIPTION, NAMESPACE |
 | **Installation** | Copy files, `source()` manually | `install_github()` or `devtools::install()` |
 | **Documentation** | Inline comments only | Roxygen2 with `@examples`, `@references`, `@export` |
-| **Exported API** | No public/private distinction | 14 exported, 2 internal functions |
+| **Exported API** | No public/private distinction | 18 exported, 2 internal functions |
 | **Testing** | 4 ad-hoc `test_that` blocks | 51 automated `testthat` assertions |
 | **Methods** | fast only (biased ~9 pp) | fast + glmer (dual method, fast within <1 pp) |
 | **CRAN MAIHDA replication** | — | All 7 core functions replicated |
@@ -520,5 +562,5 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-*Maintained by Minh Thien Nguyen. Last updated: June 2026 (v0.2.2).*
+*Maintained by Minh Thien Nguyen. Last updated: June 2026 (v0.3.0).*
 

@@ -264,3 +264,66 @@ plot_sweep <- function(sweep_df,
   print(p)
   invisible(p)
 }
+
+#' Plot detection-bias sensitivity bounds on VPC
+#'
+#' Visualizes the output of \code{\link{vpc_detection_bounds}}: the corrected
+#' null-model VPC as a function of the assumed SES-patterned under-detection
+#' strength. The \code{delta = 0} point is the observed VPC; the shaded band
+#' spans the plausible range of the true VPC.
+#'
+#' @param bounds_df A data.frame from \code{\link{vpc_detection_bounds}}.
+#' @param vpc_color,pcv_color Line colors.
+#' @param title Plot title.
+#'
+#' @return A ggplot object (invisibly); also printed.
+#'
+#' @export
+plot_detection_bounds <- function(bounds_df,
+                                  vpc_color = "#440154",
+                                  pcv_color = "#21918c",
+                                  title = "Detection-bias sensitivity bounds on VPC") {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Package 'ggplot2' is required for plot_detection_bounds().")
+  }
+
+  required_cols <- c("delta", "vpc_null", "pcv")
+  missing_cols <- setdiff(required_cols, names(bounds_df))
+  if (length(missing_cols) > 0) {
+    stop("bounds_df is missing columns: ", paste(missing_cols, collapse = ", "))
+  }
+
+  vpc_lo <- min(bounds_df$vpc_null, na.rm = TRUE)
+  vpc_hi <- max(bounds_df$vpc_null, na.rm = TRUE)
+  observed <- bounds_df$vpc_null[which.min(bounds_df$delta)]
+
+  p <- ggplot2::ggplot(bounds_df, ggplot2::aes(x = .data$delta)) +
+    ggplot2::annotate("rect", xmin = min(bounds_df$delta), xmax = max(bounds_df$delta),
+                      ymin = vpc_lo, ymax = vpc_hi, alpha = 0.08, fill = vpc_color) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = .data$vpc_null, color = "Corrected null-model VPC"),
+      linewidth = 1.0
+    ) +
+    ggplot2::geom_hline(yintercept = observed, linetype = "dotted", color = "gray40") +
+    ggplot2::annotate("point", x = 0, y = observed, size = 3, color = vpc_color) +
+    ggplot2::scale_color_manual(name = "", values = c("Corrected null-model VPC" = vpc_color)) +
+    ggplot2::labs(
+      x = "Assumed SES-patterned under-detection strength (delta)",
+      y = "Null-model VPC (%)",
+      title = title,
+      subtitle = sprintf("Observed VPC = %.1f%% at delta = 0; plausible range [%.1f, %.1f]%%",
+                         observed, vpc_lo, vpc_hi),
+      caption = "imaihda unique feature — no equivalent in CRAN MAIHDA"
+    ) +
+    ggplot2::theme_bw(base_size = 13, base_family = "serif") +
+    ggplot2::theme(
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(face = "bold"),
+      plot.subtitle = ggplot2::element_text(size = 9, color = "gray40"),
+      plot.caption = ggplot2::element_text(size = 8, color = "gray60"),
+      legend.position = "bottom"
+    )
+
+  print(p)
+  invisible(p)
+}
