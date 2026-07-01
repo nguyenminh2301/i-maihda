@@ -1,8 +1,8 @@
-# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.2.1
+# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.2.2
 
 > **English:** [README.md](README.md)
 
-Quy trình mô phỏng dữ liệu tổng hợp kiểm định độ nhạy của **VPC** và **PCV** — hai chỉ số thống kê tóm tắt cốt lõi của I-MAIHDA — trước tác động của tỉ lệ hiện mắc, strata thưa, và sai số phát hiện có khuôn mẫu SES. Repository gồm bản **Python** (chính) và **R package `imaihda` v0.2.1** (tái lập hoàn chỉnh, VPC phương pháp nhanh lệch <1 điểm phần trăm so với GLMM chuẩn vàng, tương thích CRAN MAIHDA).
+Quy trình mô phỏng dữ liệu tổng hợp kiểm định độ nhạy của **VPC** và **PCV** — hai chỉ số thống kê tóm tắt cốt lõi của I-MAIHDA — trước tác động của tỉ lệ hiện mắc, strata thưa, và sai số phát hiện có khuôn mẫu SES. Repository gồm bản **Python** (chính) và **R package `imaihda` v0.2.2** (tái lập hoàn chỉnh, VPC phương pháp nhanh lệch <1 điểm phần trăm so với GLMM chuẩn vàng, tương thích CRAN MAIHDA).
 
 ⚠️ **Không dùng dữ liệu thật.** Repository này chỉ sử dụng dữ liệu tổng hợp. Không có tuyên bố thực nghiệm nào về bất kỳ quần thể nào. Đây là minh chứng phương pháp luận.
 
@@ -340,7 +340,7 @@ source("benchmark_final.R")   # sinh ra imaihda/inst/benchmark/benchmark_*.png v
 
 Package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) trên CRAN (Bulut 2026, v0.1.11, 25 hàm xuất) là công cụ thực nghiệm đã được thiết lập cho MAIHDA giao thoa. Package hỗ trợ ba engine mô hình hoá (`lme4`, `brms` cho suy luận Bayes, `WeMix` cho trọng số khảo sát), ba kiểu phân rã (two-model chuẩn, crossed-dimensions, longitudinal/growth-curve), khoảng tin cậy bootstrap, bảng điều khiển Shiny tương tác, và năm bộ dữ liệu đi kèm.
 
-`imaihda` v0.2.1 (14 hàm xuất) tiếp cận theo hướng khác: đây là bộ công cụ mô phỏng và stress-test. Package bổ sung bộ ước lượng method-of-moments nhanh (xấp xỉ kết quả GLMM trong thời gian ngắn hơn nhiều), sinh dữ liệu tổng hợp với sai số phát hiện tùy chỉnh, các kịch bản benchmark dựng sẵn, và đối chứng song ngữ với bản Python. Package không cố gắng sánh ngang phạm vi lựa chọn mô hình hoá của CRAN MAIHDA.
+`imaihda` v0.2.2 (14 hàm xuất) tiếp cận theo hướng khác: đây là bộ công cụ mô phỏng và stress-test. Package bổ sung bộ ước lượng method-of-moments nhanh (xấp xỉ kết quả GLMM trong thời gian ngắn hơn nhiều), sinh dữ liệu tổng hợp với sai số phát hiện tùy chỉnh, các kịch bản benchmark dựng sẵn, và đối chứng song ngữ với bản Python. Package không cố gắng sánh ngang phạm vi lựa chọn mô hình hoá của CRAN MAIHDA.
 
 ### Benchmark tính toán
 
@@ -487,9 +487,9 @@ Toàn bộ 25 hàm xuất của CRAN MAIHDA và tương đương trong imaihda (
 
 ## R package so với script độc lập
 
-R package `imaihda` (v0.2.1) thay thế các script R độc lập trước đây (`R/*.R`, v3.1).
+R package `imaihda` (v0.2.2) thay thế các script R độc lập trước đây (`R/*.R`, v3.1).
 
-| Tiêu chí | Script độc lập (v3.1) | R package (v0.2.1) |
+| Tiêu chí | Script độc lập (v3.1) | R package (v0.2.2) |
 |----------|------------------------|---------------------|
 | **Cấu trúc** | File `.R` rời, `source()` thủ công | Package chuẩn: DESCRIPTION, NAMESPACE |
 | **Cài đặt** | Sao chép file, `source()` thủ công | `install_github()` hoặc `devtools::install()` |
@@ -574,6 +574,6 @@ MIT — xem [LICENSE](LICENSE).
 
 ---
 
-*Bảo trì bởi Minh Thien Nguyen. Cập nhật lần cuối: tháng 6 năm 2026 (v0.2.1).*
+*Bảo trì bởi Minh Thien Nguyen. Cập nhật lần cuối: tháng 6 năm 2026 (v0.2.2).*
 
 

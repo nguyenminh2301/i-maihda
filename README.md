@@ -1,8 +1,8 @@
-# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.2.1
+# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.2.2
 
 > **Tiếng Việt:** [README_vi.md](README_vi.md)
 
-A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.2.1** (full reproduction, cross-validated against CRAN MAIHDA, fast estimator within <1 pp of GLMM).
+A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.2.2** (full reproduction, cross-validated against CRAN MAIHDA, fast estimator within <1 pp of GLMM).
 
 ⚠️ **No real data.** This repository uses only synthetic data. It makes no empirical claim about any population. It is a methodological demonstration.
 
@@ -288,7 +288,7 @@ source("benchmark_final.R")   # produces imaihda/inst/benchmark/benchmark_*.png 
 
 The CRAN package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) (Bulut 2026, v0.1.11, 25 exported functions) is the established empirical tool for intersectional MAIHDA. It supports three modelling engines (`lme4`, `brms` for Bayesian, `WeMix` for survey weights), three decomposition types (standard two-model, crossed-dimensions, longitudinal/growth-curve), bootstrap confidence intervals, an interactive Shiny dashboard, and five bundled datasets.
 
-`imaihda` v0.2.1 (14 exported functions) takes a different approach: it is a simulation and stress-test toolkit. It adds a fast method-of-moments estimator that approximates the GLMM result in a fraction of the time, synthetic data generation with configurable detection bias, pre-built benchmark scenarios, and cross-language validation against a Python implementation. It does not attempt to match CRAN MAIHDA's breadth of modelling options.
+`imaihda` v0.2.2 (14 exported functions) takes a different approach: it is a simulation and stress-test toolkit. It adds a fast method-of-moments estimator that approximates the GLMM result in a fraction of the time, synthetic data generation with configurable detection bias, pre-built benchmark scenarios, and cross-language validation against a Python implementation. It does not attempt to match CRAN MAIHDA's breadth of modelling options.
 
 ### Computational Benchmark
 
@@ -433,9 +433,9 @@ All 25 exported CRAN MAIHDA functions and their imaihda equivalents (or lack the
 
 ## R Package vs. Standalone Scripts
 
-The R package `imaihda` (v0.2.1) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
+The R package `imaihda` (v0.2.2) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
 
-| Criterion | Standalone scripts (v3.1) | R package (v0.2.1) |
+| Criterion | Standalone scripts (v3.1) | R package (v0.2.2) |
 |-----------|---------------------------|---------------------|
 | **Structure** | Loose `.R` files, manual `source()` | Standard package: DESCRIPTION, NAMESPACE |
 | **Installation** | Copy files, `source()` manually | `install_github()` or `devtools::install()` |
@@ -520,5 +520,5 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-*Maintained by Minh Thien Nguyen. Last updated: June 2026 (v0.2.1).*
+*Maintained by Minh Thien Nguyen. Last updated: June 2026 (v0.2.2).*
 
