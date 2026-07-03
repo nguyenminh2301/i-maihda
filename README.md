@@ -18,9 +18,12 @@ A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** —
 6. [R Package `imaihda`](#r-package-imaihda)
 7. [Comparison with CRAN `MAIHDA`](#comparison-with-cran-maihda)
 8. [Cross-Language Validation](#cross-language-validation)
-9. [R Package vs. Standalone Scripts](#r-package-vs-standalone-scripts)
-10. [FAQs](#faqs)
-11. [References](#references)
+9. [Detection-Bias Sensitivity Analysis](#detection-bias-sensitivity-analysis)
+10. [Sparse-Strata Bias Correction & Confidence Intervals](#sparse-strata-bias-correction--confidence-intervals)
+11. [Causal Identification & Partial-Identification Bounds](#causal-identification--partial-identification-bounds)
+12. [R Package vs. Standalone Scripts](#r-package-vs-standalone-scripts)
+13. [FAQs](#faqs)
+14. [References](#references)
 
 ---
 
@@ -506,6 +509,23 @@ Mean gap to the analytic truth (10.1%) drops from **4.2 percentage points (naive
 
 > **Note:** this module's naive estimator uses the same *unweighted* variance formula as `between_stratum_variance()` in `diagnostics.R` (R's v0.2.1-corrected formula). Python's `fit_imaihda(method="fast")` still uses an older precision-weighted formula (see `fit.py`), which we found — while building this calibration — carries a small persistent bias that does not vanish even at very large stratum sizes; `sparse_strata_vpc()`'s `vpc_null_naive` can therefore differ slightly from `fit_imaihda(df)["vpc_null"]` in Python. This discrepancy pre-dates this feature and is out of scope to fix here.
 
+## Causal Identification & Partial-Identification Bounds
+
+**Python research module** (`python/imaihda_sim/causal.py`) — not part of the installable R package. Reframes SES-patterned under-detection as a missing-data/causal-identification problem, going beyond the sensitivity analysis and calibration above:
+
+- **When is the VPC even identified?** If detection depends only on observed covariates, the true VPC is *point-identified* — this is what `correct_detection_bias()` inverts. If detection may also depend on the true outcome itself (verification bias), the true VPC is only *set-identified*: no `score=` choice can recover a single number, only a range.
+- **`joint_calibrated_vpc()`** — fixes a composition failure found when naively chaining `correct_detection_bias()` into `sparse_strata_vpc()` on data that are both under-detected *and* sparse (they don't compose additively; see `docs/METHODS_NOTE_ROBUSTNESS.md` §6). Calibrates the entire corrected-statistic pipeline in one simulation that preserves the real data's prevalence–detection correlation. Against the population VPC: capstone regime bias improves from −16.3pp (naive) / −6.7pp (detection-only) to **+0.9pp**, with 80–95% CI coverage across tested regimes.
+- **`vpc_partial_bounds()`** — sharp (globally exact) min/max VPC bounds under a bounded-under-ascertainment assumption, valid **even where point correction provably fails** (outcome-dependent detection). Verified against exhaustive enumeration on 300 random test cases; truth-in-bounds 45/45 across every tested regime.
+
+```python
+from imaihda_sim import joint_calibrated_vpc, vpc_partial_bounds
+
+joint_calibrated_vpc(df, delta=0.8, seed=7)   # point estimate + CI, detection + sparsity together
+vpc_partial_bounds(df, delta_max=1.6)          # sharp bounds, robust to unknown detection mechanism
+```
+
+Full derivations, identification propositions, and validation results: [`docs/PHASE3_CAUSAL_IDENTIFICATION.md`](docs/PHASE3_CAUSAL_IDENTIFICATION.md). Reproduce with `python scripts/validation/phase3_causal_demo.py` (~35s) and `pytest -q python/tests/test_causal.py`.
+
 ## R Package vs. Standalone Scripts
 
 The R package `imaihda` (v0.4.0) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
@@ -582,6 +602,12 @@ No. The R package `imaihda` is a **complete, self-contained reproduction**. You 
 <summary><strong>7. What happens if the detection-bias or sparse-strata correction's assumptions are wrong?</strong></summary>
 
 See [`docs/METHODS_NOTE_ROBUSTNESS.md`](docs/METHODS_NOTE_ROBUSTNESS.md) — a full simulation study of both corrections under violated assumptions (misspecified detection covariates, outcome-dependent detection, non-Gaussian random effects, rare/extreme prevalence, and detection bias co-occurring with sparsity), with precise success/breakdown criteria and results from code that was actually executed.
+</details>
+
+<details>
+<summary><strong>8. Can the VPC be identified at all if I can't rule out outcome-dependent detection?</strong></summary>
+
+No — not to a single number. See [`docs/PHASE3_CAUSAL_IDENTIFICATION.md`](docs/PHASE3_CAUSAL_IDENTIFICATION.md): it proves the VPC is only *set*-identified in that case, and provides `vpc_partial_bounds()` (sharp, globally-exact bounds valid in exactly this regime) plus `joint_calibrated_vpc()` for when detection is covariate-only but strata are also sparse.
 </details>
 
 ---
