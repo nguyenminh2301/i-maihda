@@ -1,0 +1,11 @@
+regime,arm,bias,rmse,ci_coverage
+"capstone D+E (n=3500, sparse)",naive,-16.26,17.02,
+"capstone D+E (n=3500, sparse)",det_only,-6.72,9.07,
+"capstone D+E (n=3500, sparse)",joint,0.87,9.17,0.8
+"harsher (n=2000, shift=-3, sparse)",naive,-17.58,18.16,
+"harsher (n=2000, shift=-3, sparse)",det_only,-6.08,10.37,
+"harsher (n=2000, shift=-3, sparse)",joint,2.24,10.19,0.85
+dense (n=12000),naive,-13.86,14.32,
+dense (n=12000),det_only,-7.62,8.0,
+dense (n=12000),joint,-1.44,3.31,0.95
+M1-2 severity=1.0 (point-ID broken),bounds delta_max=1.6,,,1.0

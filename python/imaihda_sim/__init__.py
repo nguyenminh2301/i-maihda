@@ -12,3 +12,4 @@ from .robustness import (
     simulate_structured_random_effects,
     misspecified_score,
 )
+from .causal import joint_calibrated_vpc, vpc_partial_bounds
