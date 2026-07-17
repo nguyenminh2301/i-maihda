@@ -1,0 +1,9 @@
+part,arm,n_rep,mean_pcv_true,bias_naive,bias_corrected,noninferior
+A,correctly_specified,20,22.5,3.7,15.5,False
+A,omit_rural,20,22.5,3.7,11.4,False
+A,wrong_covariate,20,22.5,3.7,7.2,True
+A,quadratic,20,22.5,3.7,26.9,False
+A,severity_weight=0.0,20,22.5,3.7,15.5,False
+A,severity_weight=0.6,20,22.5,10.8,7.7,True
+A,severity_weight=1.0,20,22.5,15.3,3.1,True
+B,sparse_no_detection,20,22.3,44.6,,
