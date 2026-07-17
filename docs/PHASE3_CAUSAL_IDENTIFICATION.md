@@ -105,7 +105,7 @@ Width is the honest price of weak assumptions and contracts sharply as the envel
 - `Var(m̂)` in the joint estimator is treated as fixed in the CI (WLS noise is second-order at K=36 with 7 parameters, but not zero). Coverage 80–95% observed; below-nominal cases are in the sparsest regimes.
 - Monotonicity of the joint calibration curve is exact in the no-noise limit and empirically established at finite n; a full proof is deferred (Prop. 4).
 - Bounds assume monotone under-ascertainment (no false positives) and a correct envelope `delta_max`; both are stated, checkable-in-principle assumptions, not verifiable from the observed data alone.
-- All results use the repository's fixed 36-stratum design; K-generalization is deferred (roadmap).
+- The joint estimator's results use the repository's fixed 36-stratum design; K-generalization for `sparse_strata_vpc()` has since been completed (K ∈ {8, 36, 108}; see `METHODS_NOTE_ROBUSTNESS.md` §5.4, including the truncation-floor CI fix `ci_method="test_inversion"` it motivated), while K-generalization for `joint_calibrated_vpc()` remains deferred.
 
 ## 7. Reproduction
 

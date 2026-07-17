@@ -107,6 +107,7 @@ def sparse_strata_vpc(
     n_boot: int = 300,
     level: float = 0.95,
     seed: Optional[int] = None,
+    ci_method: str = "bootstrap",
 ) -> Dict[str, float]:
     """Bias-corrected null-model VPC and confidence interval for sparse strata.
 
@@ -124,24 +125,40 @@ def sparse_strata_vpc(
         calibration curve.
     n_sim : int, default 200
         Monte Carlo replicates per grid point used to estimate the expected
-        naive estimator.
+        naive estimator (and, for ``ci_method="test_inversion"``, its
+        per-grid-point quantiles).
     n_boot : int, default 300
         Bootstrap replicates (at the calibrated variance) used to build the
-        confidence interval.
+        confidence interval when ``ci_method="bootstrap"``. Unused by
+        ``"test_inversion"``.
     level : float, default 0.95
         Confidence level.
     seed : int, optional
         RNG seed for reproducibility.
+    ci_method : {"bootstrap", "test_inversion"}, default "bootstrap"
+        ``"bootstrap"`` (the historical default, kept for continuity of
+        published results) resamples the naive statistic at the calibrated
+        variance and maps replicates through the inverse curve. It
+        degenerates to a zero-width interval when the naive statistic sits
+        at the ``max(0, .)`` truncation floor — which happens routinely in
+        extreme-K / extreme-sparsity regimes (many strata, few individuals
+        each). ``"test_inversion"`` instead reports
+        ``{sigma2 : q_{a/2}(T|sigma2) <= T_obs <= q_{1-a/2}(T|sigma2)}`` —
+        the set of true variances under which the observed statistic is not
+        extreme — which stays honestly wide at the floor (a one-sided
+        ``[0, upper]`` interval rather than ``[0, 0]``).
 
     Returns
     -------
     dict
         ``vpc_null_naive, vpc_null_corrected, var_null_naive,
-        var_null_corrected, ci_lower, ci_upper, level, n_strata,
-        min_stratum_n, sparse, n_sim, n_boot``.
+        var_null_corrected, ci_lower, ci_upper, level, at_floor, ci_method,
+        n_strata, min_stratum_n, sparse, n_sim, n_boot``.
     """
     if not (0.0 < level < 1.0):
         raise ValueError("level must be in (0, 1)")
+    if ci_method not in ("bootstrap", "test_inversion"):
+        raise ValueError(f"ci_method must be 'bootstrap' or 'test_inversion', got {ci_method!r}")
 
     strata = df.groupby("stratum", observed=True).agg(n=("y", "size"), events=("y", "sum")).reset_index()
     n_j = strata["n"].to_numpy(dtype=np.int64)
@@ -153,9 +170,12 @@ def sparse_strata_vpc(
     var_naive = float(_var_null_from_counts(events_j[None, :], n_j.astype(float)[None, :], p_overall)[0])
 
     rng = np.random.default_rng(seed)
-    grid, means = _build_calibration_curve(n_j, p_overall, sigma2_max, n_grid, n_sim, rng)
+    grid = np.linspace(0.0, sigma2_max, n_grid)
+    sims = [_simulate_naive_var(s, n_j, p_overall, n_sim, rng) for s in grid]
+    means = np.array([s.mean() for s in sims])
 
-    if var_naive <= means[0]:
+    at_floor = bool(var_naive <= means[0])
+    if at_floor:
         # The naive estimate is already at or below the estimator's own floor
         # at sigma2 = 0; no downward correction is warranted.
         var_corrected = 0.0
@@ -165,10 +185,24 @@ def sparse_strata_vpc(
     else:
         var_corrected = float(np.interp(var_naive, means, grid))
 
-    boot_naive = _simulate_naive_var(var_corrected, n_j, p_overall, n_boot, rng)
-    boot_corrected = np.interp(np.clip(boot_naive, means[0], means[-1]), means, grid)
     alpha = 1.0 - level
-    lo, hi = np.percentile(boot_corrected, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+    if ci_method == "bootstrap":
+        boot_naive = _simulate_naive_var(var_corrected, n_j, p_overall, n_boot, rng)
+        boot_corrected = np.interp(np.clip(boot_naive, means[0], means[-1]), means, grid)
+        lo, hi = np.percentile(boot_corrected, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+    else:
+        # Monte Carlo test inversion: keep every grid sigma2 under which the
+        # observed statistic is within the central (1 - alpha) band of the
+        # statistic's sampling distribution.
+        q_lo = np.array([np.quantile(s, alpha / 2) for s in sims])
+        q_hi = np.array([np.quantile(s, 1 - alpha / 2) for s in sims])
+        accept = (q_lo <= var_naive) & (var_naive <= q_hi)
+        if accept.any():
+            lo = float(grid[accept][0])
+            hi = float(grid[accept][-1])
+        else:
+            # Degenerate MC corner case: fall back to the point estimate.
+            lo = hi = var_corrected
 
     return {
         "vpc_null_naive": vpc_latent(var_naive),
@@ -178,6 +212,8 @@ def sparse_strata_vpc(
         "ci_lower": vpc_latent(float(lo)),
         "ci_upper": vpc_latent(float(hi)),
         "level": level,
+        "at_floor": at_floor,
+        "ci_method": ci_method,
         "n_strata": int(len(n_j)),
         "min_stratum_n": int(n_j.min()),
         "sparse": bool(n_j.min() < SPARSE_THRESHOLD),

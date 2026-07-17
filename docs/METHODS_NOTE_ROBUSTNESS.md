@@ -125,6 +125,18 @@ Non-inferiority held at every prevalence level tested, including the most extrem
 | Non-inferiority holds under severe violation | **Yes, in every tested arm** — no breakdown found for `sparse_strata_vpc()` in this study |
 | ≥40% bias reduction / ≥80% coverage under mild violation | Met in all "mild" arms; exceeded in most "severe" arms too |
 
+### 5.4 Study 3 — K-generalization (previously deferred, now completed)
+
+`simulate_k_strata()` (in `robustness.py`) generalizes the factorial design to an arbitrary number of strata (i.i.d. Gaussian residuals, no spikes — isolating the K effect). K ∈ {8 (2×2×2), 36 (2×3×3×2), 108 (2×3×3×3×2)} at fixed `n=3500`, sparse allocation, 20 replicates each, analytic ground truth:
+
+| K | mean min stratum n | frac. at truncation floor | Bias (naive) | Bias (corrected) | Coverage (bootstrap CI) | Coverage (test-inversion CI) | Non-inferiority |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 8 | 19.1 | 0.65 | +0.01 | −0.03 | 0.95 | 0.90 | PASS |
+| 36 | 1.6 | 0.65 | −2.76 | +0.01 | 1.00 | 0.80 | PASS |
+| 108 | 1.0 | 0.90 | −6.33 | −5.31 | **0.10** | **0.95** | PASS |
+
+Two findings. (1) **Point non-inferiority holds at every K tested** — the calibration never makes things worse, and at K=36 it removes essentially all bias (99.6% reduction). At K=108 with only ~32 individuals per stratum, most of the information is simply gone: the naive statistic sits at its `max(0,·)` truncation floor in 90% of replicates, and calibration can no longer recover much (16% reduction). (2) That floor regime exposed a **defect in the original bootstrap CI**: when the observed statistic is exactly at the floor, resampling at the (zero) calibrated variance degenerates the interval to `[0, 0]` — coverage collapsed to 0.10. The fix, added as `sparse_strata_vpc(ci_method="test_inversion")`, reports the set of true variances under which the observed statistic is not extreme (Monte Carlo test inversion); at the floor this is an honest one-sided `[0, upper]` interval, restoring coverage to 0.95 at K=108. The default `ci_method="bootstrap"` is unchanged for continuity of the results published above; the `at_floor` flag in the output tells users when the test-inversion interval is the one to report. Reproduce: `scripts/validation/k_generalization_study.py`.
+
 ## 6. Joint capstone: detection bias and sparsity co-occurring (M2-3)
 
 The realistic worst case: `sparse=True`, `interaction_sd=0.9`, `detection_strength=0.8`, `n=3500` (the package's Scenario D+E combined). Four arms on the *same* data, 20 replicates, true VPC = 20.15%:
@@ -143,7 +155,7 @@ The realistic worst case: `sparse=True`, `interaction_sd=0.9`, `detection_streng
 ## 7. Limitations and deferred work
 
 - **`baseline_logit` misspecification (§4.3)** was folded into Study 1 as a lightweight table rather than a full scenario: because detection is normalized relative to the `score=0` stratum, this parameter only rescales curvature and is empirically far less consequential than the score's covariates or functional form.
-- **Number of strata (K)** was not varied from the package's fixed 36-stratum (2×3×3×2) design. Generalizing the finite-K bias characterization already noted in `sparse_strata_vpc()`'s docstring to other K requires a different generator architecture (not just a parameter sweep) and is left for future work.
+- **Number of strata (K)** — *completed since first writing*: Study 3 (§5.4) now covers K ∈ {8, 36, 108} for `sparse_strata_vpc()` via the generalized `simulate_k_strata()` generator. K-generalization for the *joint* estimator (`joint_calibrated_vpc`, which requires named covariates for its detection score) remains deferred.
 - **PCV and `vpc_main`** were not targeted by `sparse_strata_vpc()`'s calibration (only `vpc_null`) in either the original implementation or this robustness study; the joint capstone (§6) and Study 1 report `vpc_null`/`vpc_main`-derived quantities inconsistently only insofar as `correct_detection_bias()` itself corrects both — a full PCV-focused robustness pass is future work.
 - **Sequential composition (§6)** was tested for exactly one scenario (Scenario D+E). Whether the overcorrection direction/magnitude generalizes across other combinations of `detection_strength` and sparsity levels is not established here.
 - All simulations use the package's existing 4-covariate (sex, education, wealth, rural) intersectional design; results should not be assumed to transfer to intersectional designs with different numbers or types of dimensions without re-running the corresponding scenarios.
