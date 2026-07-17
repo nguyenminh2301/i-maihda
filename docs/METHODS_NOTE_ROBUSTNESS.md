@@ -168,12 +168,27 @@ The realistic worst case: `sparse=True`, `interaction_sd=0.9`, `detection_streng
 
 **The composed correction (both applied sequentially) overcorrects past the truth to the opposite sign** (+8.79pp) and has worse RMSE than either individual correction. **The two corrections do not compose additively.** This is the study's most important finding for future methodological work: naively chaining a detection-bias correction into a sparse-strata calibration double-counts part of the adjustment, because the sparse-strata calibration curve is built assuming the *input* naive VPC's bias comes entirely from sampling noise — once that input has already been detection-corrected, the remaining "sparsity gap" the calibration tries to close is smaller than the calibration curve assumes, and it over-corrects. A jointly-calibrated correction that models both processes simultaneously (rather than composing two independently-calibrated corrections) is flagged as a concrete direction for future work (§7).
 
+### 6.1 Generalization grid (previously single-scenario; now completed)
+
+`scripts/validation/composition_grid.py` extends the capstone to a 3×2 grid — `detection_strength ∈ {0.4, 0.8, 1.2}` × `sparse ∈ {False, True}` (n=3500, n_rep=12), five arms per cell, all against the **population** estimand (this differs from the capstone table above, which used the finite-sample `y_true` refit; see `PHASE3_CAUSAL_IDENTIFICATION.md` §3.1 for why the two truths differ). Mean bias (pp):
+
+| δ | sparse | naive | det-only | sparse-only | composed | **joint** |
+|---:|---|---:|---:|---:|---:|---:|
+| 0.4 | no | −13.81 | −9.32 | −7.27 | −2.13 | **−2.69** |
+| 0.4 | yes | −13.75 | −7.55 | −7.16 | −0.38 | **−0.39** |
+| 0.8 | no | −15.96 | −8.69 | −11.08 | −0.55 | **−2.65** |
+| 0.8 | yes | −17.53 | −6.03 | −10.04 | +3.35 | **+1.49** |
+| 1.2 | no | −12.52 | −7.09 | −6.39 | +7.55 | **−2.84** |
+| 1.2 | yes | −14.12 | −4.47 | −9.97 | +7.27 | **+2.54** |
+
+The single-scenario conclusion generalizes, with an important refinement: the composed estimator's bias **climbs monotonically with δ and changes sign** (−2.1 → +7.6), so its apparent accuracy at low δ is two opposite-signed errors cancelling, not reliability. The jointly-calibrated estimator is the only arm that stays stable (within ±3pp) in **every** cell, and ranks best-or-second-best by |bias| in 6/6 cells. Against the population estimand, detection-only correction is uniformly biased low (−4.5 to −9.3pp) because it inherits the sparse-shrinkage the joint calibration removes.
+
 ## 7. Limitations and deferred work
 
 - **`baseline_logit` misspecification (§4.3)** was folded into Study 1 as a lightweight table rather than a full scenario: because detection is normalized relative to the `score=0` stratum, this parameter only rescales curvature and is empirically far less consequential than the score's covariates or functional form.
 - **Number of strata (K)** — *completed since first writing*: Study 3 (§5.4) now covers K ∈ {8, 36, 108} for `sparse_strata_vpc()` via the generalized `simulate_k_strata()` generator. K-generalization for the *joint* estimator (`joint_calibrated_vpc`, which requires named covariates for its detection score) remains deferred.
 - **PCV and `vpc_main`** — *completed since first writing*: Study 4 (§5.5) now covers the PCV directly. Its headline results are negative — the detection correction degrades the PCV even under correct specification, and sparsity inflates the naive PCV by ~45pp toward a spurious "purely additive" reading — so a PCV-specific *correction* (as opposed to this characterization) remains an open problem.
-- **Sequential composition (§6)** was tested for exactly one scenario (Scenario D+E). Whether the overcorrection direction/magnitude generalizes across other combinations of `detection_strength` and sparsity levels is not established here.
+- **Sequential composition (§6)** — *completed since first writing*: the generalization grid (§6.1) now covers `detection_strength ∈ {0.4, 0.8, 1.2}` × both allocation regimes. The composed estimator's bias is direction-unstable in δ; the jointly-calibrated estimator (`joint_calibrated_vpc`, `PHASE3_CAUSAL_IDENTIFICATION.md` §3) is stable in every cell.
 - All simulations use the package's existing 4-covariate (sex, education, wealth, rural) intersectional design; results should not be assumed to transfer to intersectional designs with different numbers or types of dimensions without re-running the corresponding scenarios.
 
 ## 8. References

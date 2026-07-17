@@ -81,6 +81,8 @@ so the simulator inherits the data's own prevalence–detection correlation; onl
 
 The joint estimator cuts point bias by ~85–95% relative to naive and ~65–90% relative to detection-only in every regime, with the tightest gains (RMSE 3.31, coverage 95%) where data are dense. Residual RMSE in sparse regimes (~9–10pp) reflects genuine information scarcity — which the CI honestly expresses — not correctable bias.
 
+*Generalization (added after first writing):* a 3×2 grid over `detection_strength ∈ {0.4, 0.8, 1.2}` × both allocation regimes (`METHODS_NOTE_ROBUSTNESS.md` §6.1, `scripts/validation/composition_grid.py`) confirms the joint estimator is the only arm stable within ±3pp in **every** cell (best-or-second-best |bias| in 6/6), while the naive sequential composition's bias climbs monotonically with δ and changes sign.
+
 ## 4. Sharp bounds: results
 
 `vpc_partial_bounds(df, delta_max)` with a generous envelope (`delta_max=1.6` = 2× the true generating strength):
