@@ -55,6 +55,19 @@ def _between_stratum_variance(logit: np.ndarray, pred: np.ndarray, sampling_var:
     return max(raw_var - expected_noise, 0.0)
 
 
+def _between_stratum_variance_unweighted(logit: np.ndarray, pred: np.ndarray, sampling_var: np.ndarray) -> float:
+    """Unweighted variant matching R's ``between_stratum_variance()``
+    (``diagnostics.R``, corrected in v0.2.1): sample variance with (K-1)
+    divisor minus the arithmetic-mean sampling noise. Precision weighting
+    downweights the extreme strata that carry the most between-stratum
+    signal, which introduces a persistent bias that does not vanish even at
+    very large stratum sizes (see uncertainty.py's module docstring)."""
+    residual = logit - pred
+    raw_var = float(np.var(residual, ddof=1))
+    expected_noise = float(np.mean(sampling_var))
+    return max(raw_var - expected_noise, 0.0)
+
+
 def _stratum_diagnostics(df: pd.DataFrame, strata: pd.DataFrame) -> Dict[str, float]:
     prev = df.groupby("stratum", observed=True)["y"].mean()
     return {
@@ -73,22 +86,45 @@ def _stratum_diagnostics(df: pd.DataFrame, strata: pd.DataFrame) -> Dict[str, fl
     }
 
 
-def fit_imaihda(df: pd.DataFrame) -> Dict[str, float | str]:
+def fit_imaihda(df: pd.DataFrame, weighting: str = "precision") -> Dict[str, float | str]:
     """Fit fast synthetic I-MAIHDA diagnostics.
 
     The function estimates the null and main-effects between-stratum variance
     from empirical stratum logits after subtracting binomial sampling variance.
     It is designed for simulation and benchmarking only. The PhD empirical work
     should use full random-intercept MAIHDA models.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Individual-level data with ``stratum, sex, education, wealth, rural, y``.
+    weighting : {"precision", "unweighted"}, default "precision"
+        Variance formula for the between-stratum estimate. ``"precision"``
+        (the historical Python default, kept for benchmark continuity) uses
+        inverse-sampling-variance weights; ``"unweighted"`` matches R's
+        v0.2.1-corrected ``between_stratum_variance()`` and is closer to
+        unbiased at large stratum sizes — precision weighting downweights the
+        extreme strata that carry the most between-stratum signal, which
+        leaves a small persistent bias.
     """
+    if weighting not in ("precision", "unweighted"):
+        raise ValueError(f"weighting must be 'precision' or 'unweighted', got {weighting!r}")
+
     strata = _aggregate_strata(df)
     logit = strata["empirical_logit"].to_numpy()
     sampling_var = strata["logit_sampling_var"].to_numpy()
     weights = strata["precision_weight"].to_numpy()
 
+    if weighting == "precision":
+        def _bsv(pred):
+            return _between_stratum_variance(logit, pred, sampling_var, weights)
+    else:
+        def _bsv(pred):
+            return _between_stratum_variance_unweighted(logit, pred, sampling_var)
+
     p_overall = min(max(float(df["y"].mean()), 1e-6), 1 - 1e-6)
     null_pred = np.repeat(math.log(p_overall / (1.0 - p_overall)), len(strata))
-    var0 = _between_stratum_variance(logit, null_pred, sampling_var, weights)
+    var0 = _bsv(null_pred)
 
     main = smf.glm(
         "y ~ C(sex) + C(education) + C(wealth) + C(rural)",
@@ -96,7 +132,7 @@ def fit_imaihda(df: pd.DataFrame) -> Dict[str, float | str]:
         family=Binomial(),
     ).fit()
     main_pred = np.asarray(main.predict(strata, which="linear"))
-    var1 = _between_stratum_variance(logit, main_pred, sampling_var, weights)
+    var1 = _bsv(main_pred)
 
     diagnostics = _stratum_diagnostics(df, strata)
     out: Dict[str, float | str] = {
@@ -107,6 +143,7 @@ def fit_imaihda(df: pd.DataFrame) -> Dict[str, float | str]:
         "vpc_main": vpc_latent(var1),
         "pcv": pcv(var0, var1),
         "estimator": "fast_empirical_logit_diagnostic",
+        "weighting": weighting,
         "warnings": "diagnostic approximation; use full random-intercept MAIHDA for empirical analysis",
     }
     return out

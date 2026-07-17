@@ -28,11 +28,10 @@ v0.2.1 specifically because precision-weighted variance downweights the
 extreme strata that carry the most between-stratum signal, which introduces
 its own persistent bias that does not vanish even at very large stratum
 sizes (verified empirically; not a small-sample effect). Python's
-``fit_imaihda(method="fast")`` still uses the older precision-weighted
-formula (see ``fit.py``), so ``vpc_null_naive`` here can differ slightly
-from ``fit_imaihda(df)["vpc_null"]`` on the same data — this module is
-internally self-consistent and is not intended to reproduce that value
-exactly.
+``fit_imaihda()`` keeps the older precision-weighted formula as its
+*default* (for benchmark continuity) but now also exposes
+``fit_imaihda(df, weighting="unweighted")``, which matches this module's
+``vpc_null_naive`` exactly (asserted in ``tests/test_fit_weighting.py``).
 """
 from __future__ import annotations
 

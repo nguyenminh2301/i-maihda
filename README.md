@@ -507,7 +507,7 @@ Because the 36 true stratum logits are a deterministic function of the simulator
 
 Mean gap to the analytic truth (10.1%) drops from **4.2 percentage points (naive) to 0.3 percentage points (corrected)**, and the 95% interval covers the true value in 10/12 replicates. Recovery and coverage are asserted automatically in `python/tests/test_sparse_strata_ci.py` and `imaihda/tests/testthat/test-sparse-strata-ci.R`.
 
-> **Note:** this module's naive estimator uses the same *unweighted* variance formula as `between_stratum_variance()` in `diagnostics.R` (R's v0.2.1-corrected formula). Python's `fit_imaihda(method="fast")` still uses an older precision-weighted formula (see `fit.py`), which we found — while building this calibration — carries a small persistent bias that does not vanish even at very large stratum sizes; `sparse_strata_vpc()`'s `vpc_null_naive` can therefore differ slightly from `fit_imaihda(df)["vpc_null"]` in Python. This discrepancy pre-dates this feature and is out of scope to fix here.
+> **Note:** this module's naive estimator uses the same *unweighted* variance formula as `between_stratum_variance()` in `diagnostics.R` (R's v0.2.1-corrected formula). Python's `fit_imaihda()` historically used a precision-weighted formula (see `fit.py`), which we found — while building this calibration — carries a small persistent bias that does not vanish even at very large stratum sizes. Python now exposes both: `fit_imaihda(df, weighting="unweighted")` matches R and this module exactly, while the default `weighting="precision"` is kept unchanged so the benchmark tables published above remain reproducible as printed.
 
 ## Causal Identification & Partial-Identification Bounds
 

@@ -554,7 +554,7 @@ Vì 36 logit stratum thật là hàm tất định của các tham số simulato
 
 Khoảng cách trung bình tới giá trị thật giải tích (10.1%) giảm từ **4.2 điểm phần trăm (naive) xuống 0.3 điểm phần trăm (đã hiệu chỉnh)**, và khoảng tin cậy 95% bao phủ giá trị thật ở 10/12 lần lặp. Recovery và coverage được assert tự động trong `python/tests/test_sparse_strata_ci.py` và `imaihda/tests/testthat/test-sparse-strata-ci.R`.
 
-> **Lưu ý:** bộ ước lượng naive của module này dùng cùng công thức phương sai *không trọng số* như `between_stratum_variance()` trong `diagnostics.R` (công thức đã sửa ở v0.2.1 của R). `fit_imaihda(method="fast")` bản Python vẫn dùng công thức trọng số-precision cũ hơn (xem `fit.py`) — công thức mà trong lúc xây dựng calibration này chúng tôi phát hiện mang một độ lệch nhỏ tồn tại dai dẳng, không biến mất kể cả ở cỡ stratum rất lớn; do đó `vpc_null_naive` của `sparse_strata_vpc()` có thể hơi khác `fit_imaihda(df)["vpc_null"]` ở bản Python. Sự khác biệt này có từ trước tính năng này và nằm ngoài phạm vi sửa ở đây.
+> **Lưu ý:** bộ ước lượng naive của module này dùng cùng công thức phương sai *không trọng số* như `between_stratum_variance()` trong `diagnostics.R` (công thức đã sửa ở v0.2.1 của R). `fit_imaihda()` bản Python trước đây dùng công thức trọng số-precision (xem `fit.py`) — công thức mà trong lúc xây dựng calibration này chúng tôi phát hiện mang một độ lệch nhỏ tồn tại dai dẳng, không biến mất kể cả ở cỡ stratum rất lớn. Python giờ có cả hai: `fit_imaihda(df, weighting="unweighted")` khớp chính xác với R và module này, còn default `weighting="precision"` giữ nguyên để các bảng benchmark đã công bố ở trên vẫn tái tạo được đúng như in.
 
 ## Causal Identification & Partial-Identification Bounds
 
