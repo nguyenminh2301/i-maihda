@@ -1,8 +1,8 @@
-# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.3.0
+# I-MAIHDA HIC-MIC Simulation v3.2 — R package `imaihda` v0.4.0
 
 > **Tiếng Việt:** [README_vi.md](README_vi.md)
 
-A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.3.0** (full reproduction, cross-validated against CRAN MAIHDA, fast estimator within <1 pp of GLMM).
+A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.4.0** (full reproduction, cross-validated against CRAN MAIHDA, fast estimator within <1 pp of GLMM).
 
 ⚠️ **No real data.** This repository uses only synthetic data. It makes no empirical claim about any population. It is a methodological demonstration.
 
@@ -153,7 +153,7 @@ Where:
 
 ## R Package `imaihda`
 
-An installable, documented R package containing the full simulation and diagnostic pipeline. **18 functions exported**, 67 testthat assertions. Both `method="fast"` (method-of-moments, <1 pp accuracy, ~100× speedup) and `method="glmer"` (full GLMM via lme4) are supported throughout.
+An installable, documented R package containing the full simulation and diagnostic pipeline. **19 functions exported**, 79 testthat assertions. Both `method="fast"` (method-of-moments, <1 pp accuracy, ~100× speedup) and `method="glmer"` (full GLMM via lme4) are supported throughout.
 
 ### Installation
 
@@ -243,7 +243,7 @@ print(benchmarks)  # 6 pass/fail rows
 #### Running tests
 
 ```r
-devtools::test("imaihda")   # 67 testthat assertions
+devtools::test("imaihda")   # 79 testthat assertions
 ```
 
 #### Benchmark scripts
@@ -288,7 +288,7 @@ source("benchmark_final.R")   # produces imaihda/inst/benchmark/benchmark_*.png 
 
 The CRAN package [`MAIHDA`](https://cran.r-project.org/package=MAIHDA) (Bulut 2026, v0.1.11, 25 exported functions) is the established empirical tool for intersectional MAIHDA. It supports three modelling engines (`lme4`, `brms` for Bayesian, `WeMix` for survey weights), three decomposition types (standard two-model, crossed-dimensions, longitudinal/growth-curve), bootstrap confidence intervals, an interactive Shiny dashboard, and five bundled datasets.
 
-`imaihda` v0.3.0 (18 exported functions) takes a different approach: it is a simulation and stress-test toolkit. It adds a fast method-of-moments estimator that approximates the GLMM result in a fraction of the time, synthetic data generation with configurable detection bias, pre-built benchmark scenarios, and cross-language validation against a Python implementation. It does not attempt to match CRAN MAIHDA's breadth of modelling options.
+`imaihda` v0.4.0 (19 exported functions) takes a different approach: it is a simulation and stress-test toolkit. It adds a fast method-of-moments estimator that approximates the GLMM result in a fraction of the time, synthetic data generation with configurable detection bias, pre-built benchmark scenarios, and cross-language validation against a Python implementation. It does not attempt to match CRAN MAIHDA's breadth of modelling options.
 
 ### Computational Benchmark
 
@@ -363,7 +363,7 @@ Across 3 seeds, the average absolute difference between fast and glmer is under 
 | VPC (null) | 0.0636 | 0.0636 | ✅ 1e-6 |
 | PCV | 0.826 | 0.826 | ✅ 1e-4 |
 
-67 testthat assertions, including 12 cross-validation tests, confirm equivalence.
+79 testthat assertions, including 12 cross-validation tests, confirm equivalence.
 
 ### When to Use Which
 
@@ -433,6 +433,7 @@ All 25 exported CRAN MAIHDA functions and their imaihda equivalents (or lack the
 | `correct_detection_bias()` | **Corrects VPC/PCV for SES-patterned under-detection** — not in CRAN MAIHDA |
 | `vpc_detection_bounds()` | **Sensitivity bounds on the true VPC** across detection strengths — not in CRAN MAIHDA |
 | `detection_tipping_point()` | **E-value analogue**: minimum under-detection that overturns a VPC conclusion — not in CRAN MAIHDA |
+| `sparse_strata_vpc()` | **Bias-corrected VPC + confidence interval for sparse strata** — not in CRAN MAIHDA |
 
 ## Detection-Bias Sensitivity Analysis
 
@@ -473,16 +474,48 @@ Because the simulator generates both the observed outcome `y` and the true outco
 
 The corrected curve crosses the true-VPC line near `δ = 0.8`, exactly the strength used to generate the data. Recovery is asserted automatically in `python/tests/test_detection_correction.py` and `imaihda/tests/testthat/test-detection-correction.R`.
 
+## Sparse-Strata Bias Correction & Confidence Intervals
+
+The fast null-model VPC estimator smooths each stratum's empirical logit with a Laplace prior, `(events + 0.5) / (n + 1)`. When a stratum has few individuals that smoothing pulls its logit toward the population mean, which **shrinks the observed between-stratum spread below its true value**. Published I-MAIHDA studies routinely apply this kind of fast/simple estimator to sparse strata (small subgroup counts are common in intersectional analyses) without a confidence interval or small-sample correction — a gap CRAN `MAIHDA` does not address either, since it relies on full GLMM asymptotics rather than a fast estimator.
+
+### The problem — and why the fix is calibration, not a formula
+
+There is no closed-form correction for this shrinkage: the truncation `max(0, ...)` in the variance estimator makes the bias a nonlinear function of both the true variance and the stratum-size distribution. `imaihda` instead **calibrates by simulation**: for the observed stratum sizes, it simulates the estimator's own expected value across a grid of candidate true variances, then inverts that curve to find the true variance whose expected naive output matches what was actually observed — an indirect-inference / SIMEX-style correction. Bootstrap replicates at the calibrated variance, pushed through the same inverse mapping, give a confidence interval.
+
+### Usage
+
+```r
+library(imaihda)
+df <- simulate_intersectional_data(n = 3500, interaction_sd = 0.15,
+                                   sparse = TRUE, seed = 1)
+sparse_strata_vpc(df, seed = 7)
+# $vpc_null_naive, $vpc_null_corrected, $ci_lower, $ci_upper, $sparse, ...
+```
+
+```python
+from imaihda_sim import simulate_intersectional_data, sparse_strata_vpc
+```
+
+### Self-validation against an analytic ground truth
+
+Because the 36 true stratum logits are a deterministic function of the simulator's known parameters, the true VPC can be computed **exactly, with no simulation at all** — an even stronger ground truth than the detection-bias recovery test above. Under genuinely sparse allocation (`sparse = TRUE`, the package's own Scenario E; median smallest-stratum size = 1), the naive fast VPC is severely biased low. Averaged over 12 independent samples:
+
+![Sparse-strata bias correction](figures/sparse_strata_ci.png)
+
+Mean gap to the analytic truth (10.1%) drops from **4.2 percentage points (naive) to 0.3 percentage points (corrected)**, and the 95% interval covers the true value in 10/12 replicates. Recovery and coverage are asserted automatically in `python/tests/test_sparse_strata_ci.py` and `imaihda/tests/testthat/test-sparse-strata-ci.R`.
+
+> **Note:** this module's naive estimator uses the same *unweighted* variance formula as `between_stratum_variance()` in `diagnostics.R` (R's v0.2.1-corrected formula). Python's `fit_imaihda(method="fast")` still uses an older precision-weighted formula (see `fit.py`), which we found — while building this calibration — carries a small persistent bias that does not vanish even at very large stratum sizes; `sparse_strata_vpc()`'s `vpc_null_naive` can therefore differ slightly from `fit_imaihda(df)["vpc_null"]` in Python. This discrepancy pre-dates this feature and is out of scope to fix here.
+
 ## R Package vs. Standalone Scripts
 
-The R package `imaihda` (v0.3.0) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
+The R package `imaihda` (v0.4.0) replaces the earlier standalone R scripts (`R/*.R`, v3.1).
 
-| Criterion | Standalone scripts (v3.1) | R package (v0.3.0) |
+| Criterion | Standalone scripts (v3.1) | R package (v0.4.0) |
 |-----------|---------------------------|---------------------|
 | **Structure** | Loose `.R` files, manual `source()` | Standard package: DESCRIPTION, NAMESPACE |
 | **Installation** | Copy files, `source()` manually | `install_github()` or `devtools::install()` |
 | **Documentation** | Inline comments only | Roxygen2 with `@examples`, `@references`, `@export` |
-| **Exported API** | No public/private distinction | 18 exported, 2 internal functions |
+| **Exported API** | No public/private distinction | 19 exported, 2 internal functions |
 | **Testing** | 4 ad-hoc `test_that` blocks | 51 automated `testthat` assertions |
 | **Methods** | fast only (biased ~9 pp) | fast + glmer (dual method, fast within <1 pp) |
 | **CRAN MAIHDA replication** | — | All 7 core functions replicated |
@@ -545,6 +578,12 @@ In the Python run, scenario C yields $\sigma^2_{\text{null}} = 0$, so `pcv(0, 0)
 No. The R package `imaihda` is a **complete, self-contained reproduction**. You can install it, run the full pipeline, and produce all results using only R.
 </details>
 
+<details>
+<summary><strong>7. What happens if the detection-bias or sparse-strata correction's assumptions are wrong?</strong></summary>
+
+See [`docs/METHODS_NOTE_ROBUSTNESS.md`](docs/METHODS_NOTE_ROBUSTNESS.md) — a full simulation study of both corrections under violated assumptions (misspecified detection covariates, outcome-dependent detection, non-Gaussian random effects, rare/extreme prevalence, and detection bias co-occurring with sparsity), with precise success/breakdown criteria and results from code that was actually executed.
+</details>
+
 ---
 
 ## References
@@ -562,5 +601,5 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-*Maintained by Minh Thien Nguyen. Last updated: June 2026 (v0.3.0).*
+*Maintained by Minh Thien Nguyen. Last updated: June 2026 (v0.4.0).*
 

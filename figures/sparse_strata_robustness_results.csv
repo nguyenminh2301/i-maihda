@@ -1,0 +1,11 @@
+scenario,arm,n_rep,mean_vpc_true,bias_naive,bias_corrected,bias_reduction_pct,coverage,classification
+M2-1,severity=0,30,5.6,-3.02,-0.77,74.4,0.97,PASS
+M2-1,severity=1,30,9.69,-5.11,-1.35,73.6,0.8,PASS
+M2-1,severity=2,30,16.37,-6.71,0.2,97.0,0.87,attenuated-but-positive (exceeds mild-target anyway)
+M2-1,severity=3,30,24.51,-6.94,1.29,81.5,0.93,attenuated-but-positive (exceeds mild-target anyway)
+M2-1,tail=student_t3,30,9.61,-5.41,-1.77,67.2,0.83,attenuated-but-positive (exceeds mild-target anyway)
+M2-1,tail=skew_lognormal,30,9.68,-5.02,-1.37,72.6,0.87,attenuated-but-positive (exceeds mild-target anyway)
+M2-2,prevalence_shift=-2.1,30,9.69,-4.67,-0.98,78.9,0.87,PASS
+M2-2,prevalence_shift=-3.0,30,9.69,-5.11,-1.48,71.0,0.83,PASS
+M2-2,prevalence_shift=-4.0,30,9.69,-6.7,-3.07,54.1,0.87,attenuated-but-positive (exceeds mild-target anyway)
+M2-2,prevalence_shift=-5.0,30,9.69,-6.58,-4.87,25.9,0.87,attenuated-but-net-neutral-or-positive

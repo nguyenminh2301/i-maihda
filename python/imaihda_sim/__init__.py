@@ -6,3 +6,10 @@ from .detection import (
     vpc_detection_bounds,
     detection_tipping_point,
 )
+from .uncertainty import sparse_strata_vpc
+from .robustness import (
+    simulate_severity_dependent_detection,
+    simulate_structured_random_effects,
+    misspecified_score,
+)
+from .causal import joint_calibrated_vpc, vpc_partial_bounds
