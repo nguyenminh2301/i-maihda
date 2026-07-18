@@ -1,0 +1,4 @@
+K,dims,n_rep,mean_min_stratum_n,frac_at_floor,bias_naive,bias_corrected,bias_reduction_pct,coverage_bootstrap,coverage_test_inversion,noninferior
+8,"(2, 2, 2)",20,19.1,0.65,0.01,-0.03,,0.95,0.9,True
+36,"(2, 3, 3, 2)",20,1.6,0.65,-2.76,0.01,99.6,1.0,0.8,True
+108,"(2, 3, 3, 3, 2)",20,1.0,0.9,-6.33,-5.31,16.2,0.1,0.95,True

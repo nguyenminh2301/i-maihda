@@ -81,6 +81,8 @@ so the simulator inherits the data's own prevalence–detection correlation; onl
 
 The joint estimator cuts point bias by ~85–95% relative to naive and ~65–90% relative to detection-only in every regime, with the tightest gains (RMSE 3.31, coverage 95%) where data are dense. Residual RMSE in sparse regimes (~9–10pp) reflects genuine information scarcity — which the CI honestly expresses — not correctable bias.
 
+*Generalization (added after first writing):* a 3×2 grid over `detection_strength ∈ {0.4, 0.8, 1.2}` × both allocation regimes (`METHODS_NOTE_ROBUSTNESS.md` §6.1, `scripts/validation/composition_grid.py`) confirms the joint estimator is the only arm stable within ±3pp in **every** cell (best-or-second-best |bias| in 6/6), while the naive sequential composition's bias climbs monotonically with δ and changes sign.
+
 ## 4. Sharp bounds: results
 
 `vpc_partial_bounds(df, delta_max)` with a generous envelope (`delta_max=1.6` = 2× the true generating strength):
@@ -105,7 +107,7 @@ Width is the honest price of weak assumptions and contracts sharply as the envel
 - `Var(m̂)` in the joint estimator is treated as fixed in the CI (WLS noise is second-order at K=36 with 7 parameters, but not zero). Coverage 80–95% observed; below-nominal cases are in the sparsest regimes.
 - Monotonicity of the joint calibration curve is exact in the no-noise limit and empirically established at finite n; a full proof is deferred (Prop. 4).
 - Bounds assume monotone under-ascertainment (no false positives) and a correct envelope `delta_max`; both are stated, checkable-in-principle assumptions, not verifiable from the observed data alone.
-- All results use the repository's fixed 36-stratum design; K-generalization is deferred (roadmap).
+- The joint estimator's results use the repository's fixed 36-stratum design; K-generalization for `sparse_strata_vpc()` has since been completed (K ∈ {8, 36, 108}; see `METHODS_NOTE_ROBUSTNESS.md` §5.4, including the truncation-floor CI fix `ci_method="test_inversion"` it motivated), while K-generalization for `joint_calibrated_vpc()` remains deferred.
 
 ## 7. Reproduction
 

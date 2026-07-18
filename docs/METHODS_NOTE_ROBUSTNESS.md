@@ -125,6 +125,34 @@ Non-inferiority held at every prevalence level tested, including the most extrem
 | Non-inferiority holds under severe violation | **Yes, in every tested arm** — no breakdown found for `sparse_strata_vpc()` in this study |
 | ≥40% bias reduction / ≥80% coverage under mild violation | Met in all "mild" arms; exceeded in most "severe" arms too |
 
+### 5.4 Study 3 — K-generalization (previously deferred, now completed)
+
+`simulate_k_strata()` (in `robustness.py`) generalizes the factorial design to an arbitrary number of strata (i.i.d. Gaussian residuals, no spikes — isolating the K effect). K ∈ {8 (2×2×2), 36 (2×3×3×2), 108 (2×3×3×3×2)} at fixed `n=3500`, sparse allocation, 20 replicates each, analytic ground truth:
+
+| K | mean min stratum n | frac. at truncation floor | Bias (naive) | Bias (corrected) | Coverage (bootstrap CI) | Coverage (test-inversion CI) | Non-inferiority |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 8 | 19.1 | 0.65 | +0.01 | −0.03 | 0.95 | 0.90 | PASS |
+| 36 | 1.6 | 0.65 | −2.76 | +0.01 | 1.00 | 0.80 | PASS |
+| 108 | 1.0 | 0.90 | −6.33 | −5.31 | **0.10** | **0.95** | PASS |
+
+Two findings. (1) **Point non-inferiority holds at every K tested** — the calibration never makes things worse, and at K=36 it removes essentially all bias (99.6% reduction). At K=108 with only ~32 individuals per stratum, most of the information is simply gone: the naive statistic sits at its `max(0,·)` truncation floor in 90% of replicates, and calibration can no longer recover much (16% reduction). (2) That floor regime exposed a **defect in the original bootstrap CI**: when the observed statistic is exactly at the floor, resampling at the (zero) calibrated variance degenerates the interval to `[0, 0]` — coverage collapsed to 0.10. The fix, added as `sparse_strata_vpc(ci_method="test_inversion")`, reports the set of true variances under which the observed statistic is not extreme (Monte Carlo test inversion); at the floor this is an honest one-sided `[0, upper]` interval, restoring coverage to 0.95 at K=108. The default `ci_method="bootstrap"` is unchanged for continuity of the results published above; the `at_floor` flag in the output tells users when the test-inversion interval is the one to report. Reproduce: `scripts/validation/k_generalization_study.py`.
+
+### 5.5 Study 4 — PCV robustness pass (previously deferred, now completed)
+
+The PCV — the literature's standard evidence statistic for "intersectional effects" — is a *ratio* of two variances, and behaves very differently from the null-model VPC tracked above. Population truth is analytic (`V_null = Var(η_true)`, `V_main = Var(true residual)`); n_rep=20 per arm (`scripts/validation/pcv_robustness.py`). Three findings, two of them honest negatives:
+
+| Arm | mean true PCV | Bias naive | Bias corrected |
+|---|---:|---:|---:|
+| detection, correctly specified score/δ | 22.5 | **+3.7** | **+15.5** |
+| detection, `omit_rural` score | 22.5 | +3.7 | +11.4 |
+| detection, `quadratic` score | 22.5 | +3.7 | +26.9 |
+| outcome-dependent detection, `severity_weight=1.0` | 22.5 | +15.3 | +3.1 |
+| pure sparsity (n=3500, `sparse=True`), no correction exists | 22.3 | **+44.6** | — |
+
+1. **Naive PCV is surprisingly robust to covariate-only detection bias** (+3.7pp): the ratio's numerator and denominator are distorted in partially cancelling ways.
+2. **The detection correction *degrades* the PCV even under correct specification** (+15.5 vs +3.7): the correction's stratum-level WLS main-effects model is not the same estimator as the individual-level GLM the naive PCV uses, and on the ratio scale that difference is amplified. A PCV-specific correction is a genuinely open problem — `correct_detection_bias()`'s `pcv` output should be treated as diagnostic, not corrected. (Guarded by regression test so this documented limitation can't be silently forgotten.) Exception: under *strong outcome-dependent* detection the sign flips — naive PCV degrades badly (+15.3) and the corrected value is closer to truth (+3.1).
+3. **Sparsity destroys the PCV entirely** (+44.6pp): with sparse strata, `var_main` truncates to zero and the PCV reads ~100% — a spurious "everything is additive, no intersectional effects" conclusion exactly in the settings where intersectional analysis is most wanted. No correction exists in this package (or, to our knowledge, anywhere); flagging this inflation is itself an actionable warning for applied work.
+
 ## 6. Joint capstone: detection bias and sparsity co-occurring (M2-3)
 
 The realistic worst case: `sparse=True`, `interaction_sd=0.9`, `detection_strength=0.8`, `n=3500` (the package's Scenario D+E combined). Four arms on the *same* data, 20 replicates, true VPC = 20.15%:
@@ -140,12 +168,27 @@ The realistic worst case: `sparse=True`, `interaction_sd=0.9`, `detection_streng
 
 **The composed correction (both applied sequentially) overcorrects past the truth to the opposite sign** (+8.79pp) and has worse RMSE than either individual correction. **The two corrections do not compose additively.** This is the study's most important finding for future methodological work: naively chaining a detection-bias correction into a sparse-strata calibration double-counts part of the adjustment, because the sparse-strata calibration curve is built assuming the *input* naive VPC's bias comes entirely from sampling noise — once that input has already been detection-corrected, the remaining "sparsity gap" the calibration tries to close is smaller than the calibration curve assumes, and it over-corrects. A jointly-calibrated correction that models both processes simultaneously (rather than composing two independently-calibrated corrections) is flagged as a concrete direction for future work (§7).
 
+### 6.1 Generalization grid (previously single-scenario; now completed)
+
+`scripts/validation/composition_grid.py` extends the capstone to a 3×2 grid — `detection_strength ∈ {0.4, 0.8, 1.2}` × `sparse ∈ {False, True}` (n=3500, n_rep=12), five arms per cell, all against the **population** estimand (this differs from the capstone table above, which used the finite-sample `y_true` refit; see `PHASE3_CAUSAL_IDENTIFICATION.md` §3.1 for why the two truths differ). Mean bias (pp):
+
+| δ | sparse | naive | det-only | sparse-only | composed | **joint** |
+|---:|---|---:|---:|---:|---:|---:|
+| 0.4 | no | −13.81 | −9.32 | −7.27 | −2.13 | **−2.69** |
+| 0.4 | yes | −13.75 | −7.55 | −7.16 | −0.38 | **−0.39** |
+| 0.8 | no | −15.96 | −8.69 | −11.08 | −0.55 | **−2.65** |
+| 0.8 | yes | −17.53 | −6.03 | −10.04 | +3.35 | **+1.49** |
+| 1.2 | no | −12.52 | −7.09 | −6.39 | +7.55 | **−2.84** |
+| 1.2 | yes | −14.12 | −4.47 | −9.97 | +7.27 | **+2.54** |
+
+The single-scenario conclusion generalizes, with an important refinement: the composed estimator's bias **climbs monotonically with δ and changes sign** (−2.1 → +7.6), so its apparent accuracy at low δ is two opposite-signed errors cancelling, not reliability. The jointly-calibrated estimator is the only arm that stays stable (within ±3pp) in **every** cell, and ranks best-or-second-best by |bias| in 6/6 cells. Against the population estimand, detection-only correction is uniformly biased low (−4.5 to −9.3pp) because it inherits the sparse-shrinkage the joint calibration removes.
+
 ## 7. Limitations and deferred work
 
 - **`baseline_logit` misspecification (§4.3)** was folded into Study 1 as a lightweight table rather than a full scenario: because detection is normalized relative to the `score=0` stratum, this parameter only rescales curvature and is empirically far less consequential than the score's covariates or functional form.
-- **Number of strata (K)** was not varied from the package's fixed 36-stratum (2×3×3×2) design. Generalizing the finite-K bias characterization already noted in `sparse_strata_vpc()`'s docstring to other K requires a different generator architecture (not just a parameter sweep) and is left for future work.
-- **PCV and `vpc_main`** were not targeted by `sparse_strata_vpc()`'s calibration (only `vpc_null`) in either the original implementation or this robustness study; the joint capstone (§6) and Study 1 report `vpc_null`/`vpc_main`-derived quantities inconsistently only insofar as `correct_detection_bias()` itself corrects both — a full PCV-focused robustness pass is future work.
-- **Sequential composition (§6)** was tested for exactly one scenario (Scenario D+E). Whether the overcorrection direction/magnitude generalizes across other combinations of `detection_strength` and sparsity levels is not established here.
+- **Number of strata (K)** — *completed since first writing*: Study 3 (§5.4) now covers K ∈ {8, 36, 108} for `sparse_strata_vpc()` via the generalized `simulate_k_strata()` generator. K-generalization for the *joint* estimator (`joint_calibrated_vpc`, which requires named covariates for its detection score) remains deferred.
+- **PCV and `vpc_main`** — *completed since first writing*: Study 4 (§5.5) now covers the PCV directly. Its headline results are negative — the detection correction degrades the PCV even under correct specification, and sparsity inflates the naive PCV by ~45pp toward a spurious "purely additive" reading — so a PCV-specific *correction* (as opposed to this characterization) remains an open problem.
+- **Sequential composition (§6)** — *completed since first writing*: the generalization grid (§6.1) now covers `detection_strength ∈ {0.4, 0.8, 1.2}` × both allocation regimes. The composed estimator's bias is direction-unstable in δ; the jointly-calibrated estimator (`joint_calibrated_vpc`, `PHASE3_CAUSAL_IDENTIFICATION.md` §3) is stable in every cell.
 - All simulations use the package's existing 4-covariate (sex, education, wealth, rural) intersectional design; results should not be assumed to transfer to intersectional designs with different numbers or types of dimensions without re-running the corresponding scenarios.
 
 ## 8. References

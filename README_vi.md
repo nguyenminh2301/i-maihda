@@ -18,9 +18,12 @@ Quy trình mô phỏng dữ liệu tổng hợp kiểm định độ nhạy củ
 6. [R package `imaihda`](#r-package-imaihda)
 7. [So sánh với CRAN `MAIHDA`](#so-sánh-với-cran-maihda)
 8. [Đối chứng song ngữ](#đối-chứng-song-ngữ)
-9. [R package so với script độc lập](#r-package-so-với-script-độc-lập)
-10. [FAQs](#faqs)
-11. [Tài liệu tham khảo](#tài-liệu-tham-khảo)
+9. [Phân tích độ nhạy sai số phát hiện](#phân-tích-độ-nhạy-sai-số-phát-hiện-detection-bias-sensitivity-analysis)
+10. [Sửa lệch strata thưa & Khoảng tin cậy](#sửa-lệch-strata-thưa--khoảng-tin-cậy-sparse-strata-bias-correction--confidence-intervals)
+11. [Causal Identification & Partial-Identification Bounds](#causal-identification--partial-identification-bounds)
+12. [R package so với script độc lập](#r-package-so-với-script-độc-lập)
+13. [FAQs](#faqs)
+14. [Tài liệu tham khảo](#tài-liệu-tham-khảo)
 
 ---
 
@@ -551,7 +554,24 @@ Vì 36 logit stratum thật là hàm tất định của các tham số simulato
 
 Khoảng cách trung bình tới giá trị thật giải tích (10.1%) giảm từ **4.2 điểm phần trăm (naive) xuống 0.3 điểm phần trăm (đã hiệu chỉnh)**, và khoảng tin cậy 95% bao phủ giá trị thật ở 10/12 lần lặp. Recovery và coverage được assert tự động trong `python/tests/test_sparse_strata_ci.py` và `imaihda/tests/testthat/test-sparse-strata-ci.R`.
 
-> **Lưu ý:** bộ ước lượng naive của module này dùng cùng công thức phương sai *không trọng số* như `between_stratum_variance()` trong `diagnostics.R` (công thức đã sửa ở v0.2.1 của R). `fit_imaihda(method="fast")` bản Python vẫn dùng công thức trọng số-precision cũ hơn (xem `fit.py`) — công thức mà trong lúc xây dựng calibration này chúng tôi phát hiện mang một độ lệch nhỏ tồn tại dai dẳng, không biến mất kể cả ở cỡ stratum rất lớn; do đó `vpc_null_naive` của `sparse_strata_vpc()` có thể hơi khác `fit_imaihda(df)["vpc_null"]` ở bản Python. Sự khác biệt này có từ trước tính năng này và nằm ngoài phạm vi sửa ở đây.
+> **Lưu ý:** bộ ước lượng naive của module này dùng cùng công thức phương sai *không trọng số* như `between_stratum_variance()` trong `diagnostics.R` (công thức đã sửa ở v0.2.1 của R). `fit_imaihda()` bản Python trước đây dùng công thức trọng số-precision (xem `fit.py`) — công thức mà trong lúc xây dựng calibration này chúng tôi phát hiện mang một độ lệch nhỏ tồn tại dai dẳng, không biến mất kể cả ở cỡ stratum rất lớn. Python giờ có cả hai: `fit_imaihda(df, weighting="unweighted")` khớp chính xác với R và module này, còn default `weighting="precision"` giữ nguyên để các bảng benchmark đã công bố ở trên vẫn tái tạo được đúng như in.
+
+## Causal Identification & Partial-Identification Bounds
+
+**Module nghiên cứu Python** (`python/imaihda_sim/causal.py`) — không thuộc R package cài đặt được. Diễn giải lại sai số phát hiện theo khuôn mẫu SES như một bài toán missing-data/causal-identification, đi xa hơn phân tích độ nhạy và calibration ở trên:
+
+- **Khi nào VPC thực sự identify được?** Nếu detection chỉ phụ thuộc covariate quan sát được, VPC thật *point-identified* — đây là điều `correct_detection_bias()` đảo ngược. Nếu detection còn phụ thuộc chính outcome thật (verification bias), VPC thật chỉ *set-identified*: không `score=` nào khôi phục được một con số duy nhất, chỉ một khoảng.
+- **`joint_calibrated_vpc()`** — sửa lỗi composition phát hiện khi ghép `correct_detection_bias()` vào `sparse_strata_vpc()` một cách ngây thơ trên dữ liệu vừa under-detected vừa sparse (2 correction không cộng dồn tuyến tính; xem `docs/METHODS_NOTE_ROBUSTNESS.md` §6). Calibrate toàn bộ pipeline đã hiệu chỉnh trong 1 mô phỏng duy nhất, giữ đúng tương quan prevalence–detection của dữ liệu thật. So với VPC quần thể: kịch bản capstone bias cải thiện từ −16.3pp (naive) / −6.7pp (chỉ detection) xuống **+0.9pp**, coverage CI 80–95% qua các regime đã test.
+- **`vpc_partial_bounds()`** — bounds min/max VPC sắc nét (tối ưu toàn cục) dưới giả định bounded-under-ascertainment, đúng **ngay cả khi point correction chắc chắn thất bại** (detection phụ thuộc outcome). Kiểm chứng với liệt kê vét cạn trên 300 test case ngẫu nhiên; chứa giá trị thật 45/45 qua mọi regime đã test.
+
+```python
+from imaihda_sim import joint_calibrated_vpc, vpc_partial_bounds
+
+joint_calibrated_vpc(df, delta=0.8, seed=7)   # điểm ước lượng + CI, detection và sparsity đồng thời
+vpc_partial_bounds(df, delta_max=1.6)          # bounds sắc nét, robust với cơ chế detection chưa biết
+```
+
+Đầy đủ chứng minh, các proposition identification, và kết quả kiểm chứng: [`docs/PHASE3_CAUSAL_IDENTIFICATION.md`](docs/PHASE3_CAUSAL_IDENTIFICATION.md). Tái tạo bằng `python scripts/validation/phase3_causal_demo.py` (~35s) và `pytest -q python/tests/test_causal.py`.
 
 ---
 
@@ -631,6 +651,12 @@ Không. R package `imaihda` là bản tái lập **hoàn chỉnh và độc lậ
 <summary><strong>7. Điều gì xảy ra nếu giả định của detection-bias hoặc sparse-strata correction bị sai?</strong></summary>
 
 Xem [`docs/METHODS_NOTE_ROBUSTNESS.md`](docs/METHODS_NOTE_ROBUSTNESS.md) — một simulation study đầy đủ cho cả hai correction dưới các giả định bị vi phạm (sai covariate detection, detection phụ thuộc outcome, random effects không Gaussian, prevalence hiếm/cực đoan, và detection bias xảy ra đồng thời với sparsity), kèm tiêu chí thành công/vỡ chính xác và kết quả từ code đã thực sự chạy.
+</details>
+
+<details>
+<summary><strong>8. VPC có identify được không nếu tôi không loại trừ được detection phụ thuộc outcome?</strong></summary>
+
+Không — không thành 1 con số duy nhất. Xem [`docs/PHASE3_CAUSAL_IDENTIFICATION.md`](docs/PHASE3_CAUSAL_IDENTIFICATION.md): chứng minh VPC chỉ *set-identified* trong trường hợp đó, và cung cấp `vpc_partial_bounds()` (bounds sắc nét, tối ưu toàn cục, đúng chính trong regime này) cùng `joint_calibrated_vpc()` cho trường hợp detection chỉ phụ thuộc covariate nhưng strata cũng thưa.
 </details>
 
 ---

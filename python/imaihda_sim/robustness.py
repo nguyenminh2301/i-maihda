@@ -30,6 +30,7 @@ __all__ = [
     "simulate_severity_dependent_detection",
     "simulate_structured_random_effects",
     "misspecified_score",
+    "simulate_k_strata",
 ]
 
 # Same asymmetric spike ratio as simulate.py's baseline (+0.90 / -0.60),
@@ -277,3 +278,72 @@ def misspecified_score(df: pd.DataFrame, kind: str) -> np.ndarray:
         return education**2 + wealth**2 + 0.4 * rural
     else:
         raise ValueError(f"Unknown kind: {kind!r}")
+
+
+def simulate_k_strata(
+    dims: Sequence[int] = (2, 3, 3, 2),
+    betas: Sequence[float] | None = None,
+    n: int = 3500,
+    prevalence_shift: float = -3.00,
+    interaction_sd: float = 0.15,
+    sparse: bool = True,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Generalized intersectional design with an arbitrary number of strata.
+
+    Builds the full factorial stratum table over generic covariates
+    ``x1..xd`` with the level counts in ``dims`` (K = prod(dims); e.g.
+    ``(2,2,2)`` -> K=8, ``(2,3,3,2)`` -> K=36 matching the package's fixed
+    design, ``(2,3,3,3,2)`` -> K=108). The linear predictor is
+    ``prevalence_shift + sum_i beta_i * x_i`` plus i.i.d. Gaussian stratum
+    residuals ``N(0, interaction_sd)`` (no structured spikes — kept clean so
+    the K-study isolates the number-of-strata effect). ``betas`` defaults to
+    cycling the canonical gradient magnitudes ``[0.20, 0.35, 0.30, 0.25]``.
+
+    Intended for studying how ``sparse_strata_vpc()``'s finite-K calibration
+    behaves as K varies, so the output carries only the columns that function
+    needs (``stratum, y, y_true``) plus ``true_stratum_logit`` — the exact
+    per-stratum eta, from which the analytic population truth is
+    ``vpc_latent(var(unique etas, ddof=1))``. It does NOT carry the named
+    ``sex/education/wealth/rural`` columns, so it is not consumable by
+    ``fit_imaihda`` or ``correct_detection_bias`` (deliberately out of the
+    K-study's scope).
+    """
+    dims = tuple(int(d) for d in dims)
+    if len(dims) < 1 or any(d < 2 for d in dims):
+        raise ValueError("dims must have at least one dimension, each with >= 2 levels")
+    canonical = [0.20, 0.35, 0.30, 0.25]
+    if betas is None:
+        betas = [canonical[i % len(canonical)] for i in range(len(dims))]
+    betas = np.asarray(betas, dtype=float)
+    if len(betas) != len(dims):
+        raise ValueError(f"betas has length {len(betas)} but dims has {len(dims)} dimensions")
+
+    grids = np.meshgrid(*[np.arange(d) for d in dims], indexing="ij")
+    table = np.column_stack([g.ravel() for g in grids]).astype(float)
+    k = table.shape[0]
+
+    rng = np.random.default_rng(seed)
+    if sparse:
+        weights = rng.gamma(shape=0.35, scale=1.0, size=k)
+        weights = weights / weights.sum()
+    else:
+        weights = np.repeat(1.0 / k, k)
+
+    eta_add = prevalence_shift + table @ betas
+    rng_re = np.random.default_rng(seed + 999)
+    raw = rng_re.normal(0.0, interaction_sd, size=k)
+    residual = raw - raw.mean()
+    eta = eta_add + residual
+
+    stratum_id = rng.choice(k, size=n, p=weights)
+    p_true = _logit_inv(eta[stratum_id])
+    y = rng.binomial(1, p_true)
+
+    out = pd.DataFrame({
+        "stratum": pd.Categorical(stratum_id.astype(str)),
+        "y": y.astype(int),
+        "y_true": y.astype(int),
+        "true_stratum_logit": eta[stratum_id],
+    })
+    return out

@@ -11,5 +11,6 @@ from .robustness import (
     simulate_severity_dependent_detection,
     simulate_structured_random_effects,
     misspecified_score,
+    simulate_k_strata,
 )
 from .causal import joint_calibrated_vpc, vpc_partial_bounds
