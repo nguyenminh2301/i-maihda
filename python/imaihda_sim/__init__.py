@@ -12,5 +12,7 @@ from .robustness import (
     simulate_structured_random_effects,
     misspecified_score,
     simulate_k_strata,
+    simulate_selective_attrition,
 )
 from .causal import joint_calibrated_vpc, vpc_partial_bounds
+from .cohort import CohortSpec, cross_cohort_decomposition

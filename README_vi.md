@@ -21,9 +21,10 @@ Quy trình mô phỏng dữ liệu tổng hợp kiểm định độ nhạy củ
 9. [Phân tích độ nhạy sai số phát hiện](#phân-tích-độ-nhạy-sai-số-phát-hiện-detection-bias-sensitivity-analysis)
 10. [Sửa lệch strata thưa & Khoảng tin cậy](#sửa-lệch-strata-thưa--khoảng-tin-cậy-sparse-strata-bias-correction--confidence-intervals)
 11. [Causal Identification & Partial-Identification Bounds](#causal-identification--partial-identification-bounds)
-12. [R package so với script độc lập](#r-package-so-với-script-độc-lập)
-13. [FAQs](#faqs)
-14. [Tài liệu tham khảo](#tài-liệu-tham-khảo)
+12. [Cross-Cohort Comparability Decomposition](#cross-cohort-comparability-decomposition)
+13. [R package so với script độc lập](#r-package-so-với-script-độc-lập)
+14. [FAQs](#faqs)
+15. [Tài liệu tham khảo](#tài-liệu-tham-khảo)
 
 ---
 
@@ -572,6 +573,24 @@ vpc_partial_bounds(df, delta_max=1.6)          # bounds sắc nét, robust với
 ```
 
 Đầy đủ chứng minh, các proposition identification, và kết quả kiểm chứng: [`docs/PHASE3_CAUSAL_IDENTIFICATION.md`](docs/PHASE3_CAUSAL_IDENTIFICATION.md). Tái tạo bằng `python scripts/validation/phase3_causal_demo.py` (~35s) và `pytest -q python/tests/test_causal.py`.
+
+## Cross-Cohort Comparability Decomposition
+
+**Module nghiên cứu Python** (`python/imaihda_sim/cohort.py`). Trả lời đúng câu hỏi mà một so sánh HIC–MIC về bất bình đẳng sức khỏe giao thoa đặt ra: *khi nào một chênh lệch VPC/PCV thô giữa hai cohort có thể tin là khác biệt cấu trúc thật, thay vì là artefact của prevalence, strata thưa, attrition chọn lọc, hoặc detection khác biệt?*
+
+`cross_cohort_decomposition()` tách chênh lệch quan sát `VPC_B − VPC_A` thành một đóng góp **Shapley** cho mỗi trong bốn kênh artefact + một **phần dư cấu trúc** (các phần cộng đúng bằng chênh lệch; độc lập thứ tự), kèm CI bootstrap cho phần cấu trúc và verdict `structure_distinguishable_from_zero`. Tự kiểm chứng với chênh lệch thật biết-trước-theo-thiết-kế:
+
+- **Cấu trúc null** (cùng cấu trúc, khác artefact): chênh lệch thô −11pp được quy **0.00pp cho cấu trúc** — toàn bộ là artefact.
+- **Cấu trúc bị che** (masked): cohort thật sự giao thoa hơn lại cho chênh lệch thô *âm*, nhưng decomposition khôi phục phần cấu trúc dương, phân biệt được — so sánh VPC ngây thơ sẽ chỉ sai hướng.
+
+```python
+from imaihda_sim import CohortSpec, cross_cohort_decomposition
+hic = CohortSpec(interaction_sd=0.20)
+mic = CohortSpec(interaction_sd=0.95, sparse=True, detection_strength=0.5, attrition_strength=0.5)
+cross_cohort_decomposition(hic, mic, metric="vpc")   # shares + phần dư cấu trúc + CI
+```
+
+Kênh artefact thứ tư, attrition chọn lọc, có generator riêng `simulate_selective_attrition()`. Báo cáo đầy đủ và kiểm chứng: [`docs/PHASE4_CROSS_COHORT_DECOMPOSITION.md`](docs/PHASE4_CROSS_COHORT_DECOMPOSITION.md); toàn bộ chương trình phương pháp ánh xạ vào dự án tiến sĩ thế nào: [`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md). Tái tạo bằng `python scripts/validation/cross_cohort_demo.py`.
 
 ---
 
