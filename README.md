@@ -21,9 +21,10 @@ A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** —
 9. [Detection-Bias Sensitivity Analysis](#detection-bias-sensitivity-analysis)
 10. [Sparse-Strata Bias Correction & Confidence Intervals](#sparse-strata-bias-correction--confidence-intervals)
 11. [Causal Identification & Partial-Identification Bounds](#causal-identification--partial-identification-bounds)
-12. [R Package vs. Standalone Scripts](#r-package-vs-standalone-scripts)
-13. [FAQs](#faqs)
-14. [References](#references)
+12. [Cross-Cohort Comparability Decomposition](#cross-cohort-comparability-decomposition)
+13. [R Package vs. Standalone Scripts](#r-package-vs-standalone-scripts)
+14. [FAQs](#faqs)
+15. [References](#references)
 
 ---
 
@@ -525,6 +526,24 @@ vpc_partial_bounds(df, delta_max=1.6)          # sharp bounds, robust to unknown
 ```
 
 Full derivations, identification propositions, and validation results: [`docs/PHASE3_CAUSAL_IDENTIFICATION.md`](docs/PHASE3_CAUSAL_IDENTIFICATION.md). Reproduce with `python scripts/validation/phase3_causal_demo.py` (~35s) and `pytest -q python/tests/test_causal.py`.
+
+## Cross-Cohort Comparability Decomposition
+
+**Python research module** (`python/imaihda_sim/cohort.py`). Answers the question a HIC–MIC comparison of intersectional health inequality actually poses: *when can a raw difference in VPC/PCV between two cohorts be trusted as a genuine structural difference, rather than an artefact of prevalence, sparse strata, selective attrition, or differential detection?*
+
+`cross_cohort_decomposition()` splits the observed `VPC_B − VPC_A` gap into a **Shapley** contribution for each of the four artefact channels plus a **structural residual** (shares sum exactly to the gap; order-independent), with a bootstrap CI on the structural share and a `structure_distinguishable_from_zero` verdict. Self-validated against a known-by-construction true gap:
+
+- **Null structure** (identical structure, different artefacts): a −11pp raw gap is attributed **0.00pp to structure** — the whole gap is artefact.
+- **Masked structure**: a genuinely more-intersectional cohort shows a *negative* raw gap, but the decomposition recovers a positive, distinguishable structural share — a naïve VPC comparison would point the wrong way.
+
+```python
+from imaihda_sim import CohortSpec, cross_cohort_decomposition
+hic = CohortSpec(interaction_sd=0.20)
+mic = CohortSpec(interaction_sd=0.95, sparse=True, detection_strength=0.5, attrition_strength=0.5)
+cross_cohort_decomposition(hic, mic, metric="vpc")   # shares + structural residual + CI
+```
+
+The fourth artefact channel, selective attrition, has its own generator `simulate_selective_attrition()`. Full report and validation: [`docs/PHASE4_CROSS_COHORT_DECOMPOSITION.md`](docs/PHASE4_CROSS_COHORT_DECOMPOSITION.md); how the whole methodological programme maps onto the PhD: [`docs/PROJECT_PROGRESS_REPORT.md`](docs/PROJECT_PROGRESS_REPORT.md). Reproduce with `python scripts/validation/cross_cohort_demo.py`.
 
 ## R Package vs. Standalone Scripts
 

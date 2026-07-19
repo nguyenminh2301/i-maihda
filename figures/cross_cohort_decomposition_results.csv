@@ -1,0 +1,4 @@
+scenario,vpc_a,vpc_b,gap,share_prevalence,share_structure,share_sparsity,share_detection,share_attrition,structure_ci_lo,structure_ci_hi,distinguishable,true_structural_gap
+null_structure,11.1,0.09,-11.01,-0.44,0.0,-3.72,-5.39,-1.45,0.0,0.0,False,0.0
+pure_structure,10.12,25.01,14.89,0.0,14.89,0.0,0.0,0.0,12.61,16.04,True,14.24
+masked_structure,10.12,4.9,-5.23,-0.76,10.27,-7.7,-6.13,-0.9,8.5,12.7,True,14.24

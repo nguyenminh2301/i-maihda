@@ -31,6 +31,7 @@ __all__ = [
     "simulate_structured_random_effects",
     "misspecified_score",
     "simulate_k_strata",
+    "simulate_selective_attrition",
 ]
 
 # Same asymmetric spike ratio as simulate.py's baseline (+0.90 / -0.60),
@@ -347,3 +348,103 @@ def simulate_k_strata(
         "true_stratum_logit": eta[stratum_id],
     })
     return out
+
+
+def simulate_selective_attrition(
+    n: int = 6000,
+    prevalence_shift: float = -2.10,
+    interaction_sd: float = 0.0,
+    attrition_strength: float = 0.0,
+    attrition_outcome_weight: float = 0.30,
+    sparse: bool = False,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Like ``simulate_intersectional_data`` but individuals are selectively
+    LOST before observation (the fourth artefact channel named in the PhD
+    exposé, alongside prevalence, sparsity, and detection). Retention is
+    SES-patterned and mildly outcome-dependent:
+
+        logit(P(retained)) = 2.0 - attrition_strength * (education + wealth
+                             + 0.4*rural) - attrition_outcome_weight
+                             * attrition_strength * y_true
+
+    so disadvantaged strata — and, within them, true cases — are
+    differentially dropped. Unlike detection (which zeroes the recorded
+    outcome but keeps the individual in the denominator), attrition removes
+    the individual entirely, shrinking BOTH the stratum's event count and its
+    size. ``attrition_strength=0`` reproduces ``simulate_intersectional_data``
+    exactly (no rows dropped; regression-checked).
+
+    Returns the standard column contract (``stratum, sex, education, wealth,
+    rural, y, y_true, detection_probability, true_stratum_residual``) plus
+    ``retention_probability``, restricted to retained rows — so
+    ``fit_imaihda``, ``sparse_strata_vpc``, etc. consume it unmodified.
+    """
+    rng = np.random.default_rng(seed)
+    strata = _stratum_table()
+    k = len(strata)
+
+    if sparse:
+        weights = rng.gamma(shape=0.35, scale=1.0, size=k)
+        weights = weights / weights.sum()
+    else:
+        weights = np.repeat(1.0 / k, k)
+
+    stratum_id = rng.choice(k, size=n, p=weights)
+    x = strata.iloc[stratum_id].reset_index(drop=True)
+
+    linear_predictor = (
+        prevalence_shift
+        + 0.20 * x["sex"].to_numpy()
+        + 0.35 * x["education"].to_numpy()
+        + 0.30 * x["wealth"].to_numpy()
+        + 0.25 * x["rural"].to_numpy()
+    )
+
+    true_stratum_residual = np.zeros(k)
+    if interaction_sd > 0:
+        rng_re = np.random.default_rng(seed + 999)
+        raw = rng_re.normal(loc=0.0, scale=interaction_sd, size=k)
+        raw += 0.90 * (
+            (strata["education"].to_numpy() == 2)
+            & (strata["wealth"].to_numpy() == 2)
+            & (strata["rural"].to_numpy() == 1)
+        )
+        raw -= 0.60 * (
+            (strata["education"].to_numpy() == 0)
+            & (strata["wealth"].to_numpy() == 2)
+            & (strata["rural"].to_numpy() == 0)
+        )
+        true_stratum_residual = raw - raw.mean()
+        linear_predictor = linear_predictor + true_stratum_residual[stratum_id]
+
+    p_true = _logit_inv(linear_predictor)
+    y_true = rng.binomial(1, p_true)
+
+    if attrition_strength > 0:
+        score = (
+            x["education"].to_numpy()
+            + x["wealth"].to_numpy()
+            + 0.40 * x["rural"].to_numpy()
+        )
+        retain_logit = (
+            2.0
+            - attrition_strength * score
+            - attrition_outcome_weight * attrition_strength * y_true
+        )
+        retain_p = _logit_inv(retain_logit)
+        retained = rng.binomial(1, retain_p).astype(bool)
+    else:
+        retain_p = np.ones(n)
+        retained = np.ones(n, dtype=bool)
+
+    out = x.copy()
+    out["stratum"] = pd.Categorical(stratum_id.astype(str))
+    for col in ["sex", "education", "wealth", "rural"]:
+        out[col] = pd.Categorical(out[col])
+    out["y"] = y_true.astype(int)
+    out["y_true"] = y_true.astype(int)
+    out["detection_probability"] = np.ones(n)
+    out["true_stratum_residual"] = true_stratum_residual[stratum_id]
+    out["retention_probability"] = retain_p
+    return out.loc[retained].reset_index(drop=True)

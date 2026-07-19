@@ -9,6 +9,16 @@ once the corresponding work is merged to `main`.
 ## [Unreleased]
 
 ### Added
+- **Phase 4 — cross-cohort comparability decomposition** (`docs/PHASE4_CROSS_COHORT_DECOMPOSITION.md`,
+  `python/imaihda_sim/cohort.py`): `cross_cohort_decomposition()` splits a raw
+  HIC–MIC VPC/PCV gap into a Shapley contribution for each of the four artefact
+  channels named in the PhD exposé (prevalence, sparse strata, selective
+  attrition, differential detection) plus a structural residual, with a CI on
+  the structural share and a distinguishable-from-zero verdict. Self-validated
+  against a known-by-construction true gap: null-structure → 0.00pp structural
+  share; masked structure → correctly unmasked. Adds the fourth artefact
+  generator `simulate_selective_attrition()`. `docs/PROJECT_PROGRESS_REPORT.md`
+  maps the whole methodological programme onto the PhD subprojects.
 - **Robustness/simulation study** for both quantitative-bias-analysis methods
   under violated assumptions (`docs/METHODS_NOTE_ROBUSTNESS.md`;
   `python/imaihda_sim/robustness.py`; `scripts/validation/*_robustness.py`,
