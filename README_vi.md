@@ -2,6 +2,8 @@
 
 > **English:** [README.md](README.md)
 
+> **Lộ trình dự án:** [bản dễ hiểu](docs/LO_TRINH_DE_HIEU.md) · [bản học thuật](docs/LO_TRINH_HOC_THUAT.md)
+
 Quy trình mô phỏng dữ liệu tổng hợp kiểm định độ nhạy của **VPC** và **PCV** — hai chỉ số thống kê tóm tắt cốt lõi của I-MAIHDA — trước tác động của tỉ lệ hiện mắc, strata thưa, và sai số phát hiện có khuôn mẫu SES. Repository gồm bản **Python** (chính) và **R package `imaihda` v0.4.0** (tái lập hoàn chỉnh, VPC phương pháp nhanh lệch <1 điểm phần trăm so với GLMM chuẩn vàng, tương thích CRAN MAIHDA).
 
 ⚠️ **Không dùng dữ liệu thật.** Repository này chỉ sử dụng dữ liệu tổng hợp. Không có tuyên bố thực nghiệm nào về bất kỳ quần thể nào. Đây là minh chứng phương pháp luận.

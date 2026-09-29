@@ -2,6 +2,8 @@
 
 > **Tiếng Việt:** [README_vi.md](README_vi.md)
 
+> **Roadmap (Vietnamese):** [plain-language version](docs/LO_TRINH_DE_HIEU.md) · [academic version](docs/LO_TRINH_HOC_THUAT.md)
+
 A synthetic-data stress-test workflow demonstrating that **VPC** and **PCV** — the two core summary statistics of Intersectional MAIHDA — are sensitive to outcome prevalence, stratum sparsity, and SES-patterned under-detection. The repository provides a **Python** implementation (primary) and an installable **R package `imaihda` v0.4.0** (full reproduction, cross-validated against CRAN MAIHDA, fast estimator within <1 pp of GLMM).
 
 ⚠️ **No real data.** This repository uses only synthetic data. It makes no empirical claim about any population. It is a methodological demonstration.
